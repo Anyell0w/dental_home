@@ -1,0 +1,4 @@
+# Odontograma standalone
+# Tkinter viene incluido con Python (no se instala con pip).
+# Pillow solo se necesita para exportar a PNG / PDF.
+Pillow>=9.0
