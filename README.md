@@ -4,6 +4,12 @@ Aplicación de escritorio (Tkinter) para la gestión integral de un consultorio 
 pacientes, agenda de citas, historial clínico, recetas en PDF, reportes (PDF/Excel),
 copias de seguridad y administración de usuarios por roles.
 
+# INTEGRANTES
+- Angello Marcelo Zamora Valencia
+- Ronaldo Carlos Mamani Mena
+- Lizbeth Estefany Cáceres Tacora
+- Tania Karin Butrón Maquera
+
 ## Arquitectura
 
 Arquitectura en capas con inyección de dependencias desde `main.py`:
