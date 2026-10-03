@@ -1,0 +1,54 @@
+<div x-data="equipoView">
+  <div class="page-head"><div><h1>Equipo</h1><p><span class="num" x-text="$store.app.uso.usuarios"></span> de <span x-text="$store.app.sub.plan.max_usuarios || '∞'"></span> usuarios activos</p></div>
+    <button class="btn primary" @click="nuevo()"><svg class="i"><use href="#i-userplus"/></svg>Agregar miembro</button></div>
+  <div class="card" style="margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <svg class="i lg" style="color:var(--brand-ink)"><use href="#i-key"/></svg>
+    <div style="flex:1;min-width:200px"><b>Código de tu clínica</b><div class="muted" style="font-size:13.5px">Tu equipo lo usa junto a su usuario para iniciar sesión.</div></div>
+    <code class="badge brand plain" style="font-size:14px;height:32px;padding:0 14px" x-text="$store.app.clinica.slug"></code>
+    <button class="btn sm" @click="copiar()">Copiar</button>
+  </div>
+  <div class="team-grid stagger">
+    <template x-for="(u, i) in lista" :key="u.id">
+      <div class="card member" :class="{ off: !u.activo }" :style="'--i:' + Math.min(i, 12)">
+        <div class="avatar" x-text="fmt.initials(u.usuario)"></div>
+        <div class="info"><strong x-text="u.usuario"></strong>
+          <span class="muted" style="font-size:13px" x-text="u.rol === 'Doctor' ? (u.colegiatura ? 'COP ' + u.colegiatura : 'Sin colegiatura') : u.rol === 'Secretaria' ? 'Turno ' + (u.turno || '—') : 'Acceso total'"></span></div>
+        <span class="badge" :class="{ brand: u.rol === 'Administrador', info: u.rol === 'Doctor' }" x-text="u.rol"></span>
+        <div style="display:flex">
+          <button class="btn ghost icon sm" title="Editar perfil" x-show="u.rol !== 'Administrador'" @click="editar(u)"><svg class="i"><use href="#i-edit"/></svg></button>
+          <button class="btn ghost icon sm" title="Restablecer contraseña" @click="clave = { u, nueva: '' }"><svg class="i"><use href="#i-key"/></svg></button>
+          <button class="btn ghost icon sm" :class="u.activo ? 'danger' : ''" :title="u.activo ? 'Desactivar' : 'Reactivar'" x-show="u.id !== $store.app.user.id" @click="alternar(u)"><svg class="i"><use :href="u.activo ? '#i-lock' : '#i-check'"/></svg></button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <template x-if="form">
+    <div class="overlay" @click.self="form = null" @keydown.escape.window="form = null">
+      <form class="modal" @submit.prevent="guardar">
+        <h2 x-text="form.id ? 'Editar ' + form.usuario : 'Agregar miembro'"></h2><p class="sub">Cada persona entra con su propio usuario.</p>
+        <div class="form">
+          <template x-if="!form.id"><div class="form">
+            <div class="field"><label>Rol</label><div class="seg" style="display:flex"><template x-for="r in ['Doctor','Secretaria','Administrador']" :key="r"><button type="button" style="flex:1" :class="{ on: form.rol === r }" @click="form.rol = r" x-text="r"></button></template></div></div>
+            <div class="grid-2"><div class="field"><label>Usuario</label><input class="input" x-model="form.usuario" autocapitalize="off" required minlength="3" maxlength="30" x-init="$nextTick(() => $el.focus())"></div>
+              <div class="field"><label>Contraseña</label><input type="password" class="input" x-model="form.password" minlength="8" required autocomplete="new-password"></div></div></div></template>
+          <div class="field" x-show="form.rol === 'Doctor'"><label>Colegiatura (COP)</label><input class="input" x-model="form.colegiatura" maxlength="30" placeholder="COP-12345"></div>
+          <div class="field" x-show="form.rol === 'Secretaria'"><label>Turno</label><select class="input" x-model="form.turno"><option>Mañana</option><option>Tarde</option><option>Tiempo Completo</option></select></div>
+          <div class="error-text" x-show="error" x-text="error"></div>
+          <div class="actions"><button type="button" class="btn" @click="form = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }" x-text="form.id ? 'Guardar' : 'Agregar'"></button></div>
+        </div>
+      </form>
+    </div>
+  </template>
+
+  <template x-if="clave">
+    <div class="overlay" @click.self="clave = null" @keydown.escape.window="clave = null">
+      <form class="modal" style="width:min(420px,100%)" @submit.prevent="resetear">
+        <h2>Nueva contraseña</h2><p class="sub" x-text="'Para ' + clave.u.usuario"></p>
+        <div class="form"><div class="field"><label>Contraseña</label><input type="password" class="input" x-model="clave.nueva" minlength="8" required autocomplete="new-password" x-init="$nextTick(() => $el.focus())"><span class="hint">Mínimo 8 caracteres</span></div>
+          <div class="error-text" x-show="error" x-text="error"></div>
+          <div class="actions"><button type="button" class="btn" @click="clave = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }">Guardar</button></div></div>
+      </form>
+    </div>
+  </template>
+</div>

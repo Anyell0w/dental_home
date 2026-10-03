@@ -10,6 +10,34 @@ copias de seguridad y administración de usuarios por roles.
 - Lizbeth Estefany Cáceres Tacora
 - Tania Karin Butrón Maquera
 
+## Versión web (SaaS por suscripción)
+
+La lógica (modelos, DAO, controladores) es la misma del escritorio; `web/` la expone como
+API Flask y agrega una interfaz moderna en el navegador.
+
+```bash
+pip install -r requirements.txt
+python -m web.app                    # http://localhost:5000
+# producción: gunicorn -w 2 -k gthread --threads 4 web.app:app   (o `docker build .`)
+```
+
+- **Multi-clínica:** cada consultorio tiene su propio SQLite en `data/clinicas/<código>/` (aislamiento total);
+  `data/plataforma.db` guarda clínicas, plan y estado de suscripción. Variables: `DENTAL_DATA_DIR`,
+  `DENTAL_SECRET_KEY`, `DENTAL_HTTPS=1` (cookie segura), `PORT`.
+- **Planes** (`web/platform.py`): Esencial / Profesional / Clínica, con límites de usuarios y pacientes,
+  Excel solo desde Profesional, 14 días de prueba. Vencida la prueba o cancelado el plan, la clínica queda
+  en solo lectura (HTTP 402 al escribir).
+- **Roles:** Administrador (todo), Doctor (agenda propia, historial, odontograma, recetas), Secretaria (pacientes y citas).
+  El Administrador también accede al historial clínico (en un consultorio pequeño suele ser el propio odontólogo).
+- **Frontend sin build:** Alpine.js + three.js vendorizados en `web/static/vendor` (landing con diente 3D).
+  Guía de diseño en `.claude/skills/dental-ui/SKILL.md`.
+
+### Pendiente antes de cobrar de verdad
+1. **Pasarela de pago:** `POST /api/suscripcion/plan` activa el plan *sin cobrar* (modo demo). Integrar Stripe/Culqi/MercadoPago
+   y activar el plan desde su webhook.
+2. **Contraseñas:** el modelo original usa SHA-256 sin sal (`Usuario.hashear_contrasena`); migrar a bcrypt/argon2 antes de producción.
+3. HTTPS, correo de recuperación de contraseña y respaldos externos de `data/`.
+
 ## Arquitectura
 
 Arquitectura en capas con inyección de dependencias desde `main.py`:

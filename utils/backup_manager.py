@@ -3,7 +3,7 @@ Módulo de Mantenimiento Preventivo y Respaldos Automatizados en Caliente.
 Soporta compresión física nativa ZIP e inyección segura por hilos.
 """
 import os
-import shutil
+import sqlite3
 import zipfile
 import threading
 import time
@@ -13,18 +13,26 @@ from config import PATHS
 
 class BackupManager:
     @staticmethod
-    def ejecutar_copia_seguridad_fisica(comprimir_zip: bool = True) -> str:
+    def ejecutar_copia_seguridad_fisica(comprimir_zip: bool = True, ruta_db: str = None, ruta_backups: str = None) -> str:
         """Duplica de manera íntegra el archivo de base de datos de producción."""
+        ruta_db = ruta_db or PATHS["db"]
+        ruta_backups = ruta_backups or PATHS["backups"]
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             nombre_base = f"backup_{timestamp}"
-            ruta_salida_db = os.path.join(PATHS["backups"], f"{nombre_base}.db")
-            
-            # Copiar archivo maestro relacional
-            shutil.copy2(PATHS["db"], ruta_salida_db)
+            ruta_salida_db = os.path.join(ruta_backups, f"{nombre_base}.db")
+
+            # Copia consistente (API de backup de SQLite, segura con la BD en uso)
+            origen = sqlite3.connect(ruta_db)
+            destino = sqlite3.connect(ruta_salida_db)
+            try:
+                origen.backup(destino)
+            finally:
+                destino.close()
+                origen.close()
             
             if comprimir_zip:
-                ruta_zip = os.path.join(PATHS["backups"], f"{nombre_base}.zip")
+                ruta_zip = os.path.join(ruta_backups, f"{nombre_base}.zip")
                 with zipfile.ZipFile(ruta_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
                     zipf.write(ruta_salida_db, arcname=f"{nombre_base}.db")
                 os.remove(ruta_salida_db)  # Limpieza del archivo intermedio descompreso

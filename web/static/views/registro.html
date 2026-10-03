@@ -1,0 +1,25 @@
+<div class="auth" x-data="registroView">
+  <div class="auth-form">
+    <form class="inner" @submit.prevent="submit">
+      <a class="brand" href="#/" style="padding:0"><svg class="logo" viewBox="0 0 24 24"><use href="#i-tooth" fill="url(#g-brand)" stroke="none"/></svg><span>Dental Home</span></a>
+      <div><h1>Crea tu consultorio</h1><p class="muted" style="margin-top:8px">14 días gratis. Sin tarjeta.</p></div>
+      <div class="field"><label for="cl">Nombre del consultorio</label><input id="cl" class="input" x-model="f.clinica" placeholder="Sonrisa Norte" required maxlength="60"></div>
+      <div class="field"><label for="em">Correo</label><input id="em" type="email" class="input" x-model="f.email" placeholder="tu@correo.com" autocomplete="email" required></div>
+      <div class="grid-2">
+        <div class="field"><label for="us">Tu usuario</label><input id="us" class="input" x-model="f.usuario" autocomplete="username" autocapitalize="off" required></div>
+        <div class="field"><label for="pw">Contraseña</label><input id="pw" type="password" class="input" x-model="f.password" minlength="8" autocomplete="new-password" required><span class="hint">Mínimo 8 caracteres</span></div>
+      </div>
+      <div class="field"><label for="pl">Plan de prueba</label>
+        <select id="pl" class="input" x-model="f.plan"><template x-for="p in planes" :key="p.id"><option :value="p.id" x-text="p.nombre + ' — S/ ' + p.precio + '/mes'"></option></template></select></div>
+      <label class="check"><input type="checkbox" x-model="f.demo"><span>Cargar datos de ejemplo para explorar (puedes borrarlos después)</span></label>
+      <div class="error-text" x-show="error" x-text="error"></div>
+      <button class="btn primary lg" :class="{ 'is-busy': busy }" style="width:100%">Crear mi consultorio</button>
+      <p class="muted" style="text-align:center">¿Ya tienes cuenta? <a class="link" href="#/login">Entrar</a></p>
+    </form>
+  </div>
+  <div class="auth-art">
+    <span class="orb" style="width:120px;height:120px;top:16%;right:14%"></span>
+    <span class="orb" style="width:60px;height:60px;bottom:20%;left:18%;animation-delay:-3s"></span>
+    <blockquote>Tu espacio queda listo en menos de un minuto, con tu propia base de datos privada.<small>Incluye agenda, historial, odontograma y recetas</small></blockquote>
+  </div>
+</div>

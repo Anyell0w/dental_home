@@ -13,7 +13,8 @@ class CopiaSeguridadController:
     def ejecutar_backup_manual(self, admin_id: int) -> CopiaSeguridad:
         backup = CopiaSeguridad(None, "Manual", admin_id)
         try:
-            ruta_final = BackupManager.ejecutar_copia_seguridad_fisica(comprimir_zip=True)
+            ruta_final = BackupManager.ejecutar_copia_seguridad_fisica(
+                comprimir_zip=True, ruta_db=self._ruta_db, ruta_backups=self._ruta_respaldo)
             backup._ubicacion = ruta_final
             backup._estado = "Exitoso"
         except Exception:

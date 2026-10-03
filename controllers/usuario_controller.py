@@ -53,6 +53,23 @@ class UsuarioController:
         user_id = self._usuario_dao.guardar(nuevo_usuario)
         return self._usuario_dao.buscar_por_id(user_id)
 
+    def actualizar_perfil(self, usuario_id: int, colegiatura: Optional[str] = None,
+                          turno: Optional[str] = None) -> Usuario:
+        """Completa los datos propios del rol: colegiatura (Doctor) o turno (Secretaria)."""
+        if self._usuario_activo is None or self._usuario_activo.rol != 'Administrador':
+            raise PermissionError("Operación denegada: Privilegios de Administrador requeridos.")
+        user = self._usuario_dao.buscar_por_id(usuario_id)
+        if not user:
+            raise ValueError("El usuario no existe.")
+        if user.rol == 'Doctor' and colegiatura is not None:
+            user._numeroColegiatura = colegiatura.strip()
+        if user.rol == 'Secretaria' and turno is not None:
+            if turno not in ('Mañana', 'Tarde', 'Tiempo Completo'):
+                raise ValueError("Turno inválido.")
+            user._turno = turno
+        self._usuario_dao.actualizar(user)
+        return user
+
     def cambiar_contrasena(self, usuario_id: int, actual: str, nueva: str) -> bool:
         self._validar_contrasena(nueva)
         user = self._usuario_dao.buscar_por_id(usuario_id)

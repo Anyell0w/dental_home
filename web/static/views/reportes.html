@@ -1,0 +1,29 @@
+<div x-data="reportesView">
+  <div class="page-head"><div><h1>Reportes</h1><p>Exporta métricas de tu consultorio en PDF o Excel.</p></div></div>
+  <div class="cols" style="grid-template-columns:1fr 1.3fr">
+    <form class="card" @submit.prevent="generar">
+      <div class="card-head"><h3>Nuevo reporte</h3></div>
+      <div class="form">
+        <div class="field"><label>Tipo</label>
+          <div class="seg" style="display:flex"><template x-for="t in TIPOS" :key="t"><button type="button" style="flex:1" :class="{ on: f.tipo === t }" @click="f.tipo = t" x-text="t"></button></template></div></div>
+        <div class="field"><label>Formato</label>
+          <div class="seg" style="display:flex"><button type="button" style="flex:1" :class="{ on: f.formato === 'PDF' }" @click="f.formato = 'PDF'">PDF</button>
+            <button type="button" style="flex:1" :class="{ on: f.formato === 'Excel' }" @click="f.formato = 'Excel'">Excel <span class="badge brand plain" x-show="!$store.app.sub.plan.excel" style="height:18px;font-size:10.5px;margin-left:4px">Pro</span></button></div></div>
+        <div class="grid-2"><div class="field"><label>Desde</label><input type="date" class="input" x-model="f.inicio" required></div><div class="field"><label>Hasta</label><input type="date" class="input" x-model="f.fin" required></div></div>
+        <p class="hint" x-show="f.tipo === 'Pacientes'">El reporte de pacientes refleja el padrón actual, sin filtrar por fecha.</p>
+        <div class="error-text" x-show="error" x-text="error"></div>
+        <button class="btn primary" :class="{ 'is-busy': busy }"><svg class="i"><use href="#i-chart"/></svg>Generar reporte</button>
+      </div>
+    </form>
+    <div class="card">
+      <div class="card-head"><h3>Generados</h3></div>
+      <template x-if="!lista.length"><div class="empty" style="padding:36px 10px"><h3>Todavía no hay reportes</h3><p>Genera el primero con el formulario.</p></div></template>
+      <div class="stagger"><template x-for="(r, i) in lista" :key="r.id">
+        <div class="file-row" :style="'--i:' + Math.min(i, 10)"><div class="ico"><svg class="i"><use href="#i-file"/></svg></div>
+          <div class="grow"><b x-text="'Reporte de ' + r.tipo.toLowerCase()"></b><div class="muted" style="font-size:13px" x-text="r.inicio + ' → ' + r.fin + ' · ' + r.generadoPor + ' · ' + r.fecha"></div></div>
+          <span class="badge brand plain" x-text="r.formato"></span>
+          <a class="btn sm" :href="'/api/reportes/' + r.id + '/archivo'"><svg class="i"><use href="#i-download"/></svg></a></div>
+      </template></div>
+    </div>
+  </div>
+</div>

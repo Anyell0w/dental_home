@@ -1,0 +1,84 @@
+<div x-data="inicioView">
+  <div class="page-head">
+    <div><h1><span x-text="fmt.saludo()"></span>, <span x-text="$store.app.user.usuario"></span></h1><p x-text="fmt.cap(fmt.long(fmt.today()))"></p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn" href="#/pacientes?nuevo=1"><svg class="i"><use href="#i-userplus"/></svg>Paciente</a>
+      <a class="btn primary" href="#/citas?nueva=1"><svg class="i"><use href="#i-plus"/></svg>Nueva cita</a>
+    </div>
+  </div>
+
+  <template x-if="!d">
+    <div class="grid-stats"><template x-for="n in 4"><div class="card"><div class="skel" style="height:14px;width:50%"></div><div class="skel" style="height:34px;width:40%;margin-top:14px"></div></div></template></div>
+  </template>
+
+  <template x-if="d">
+    <div>
+      <div class="grid-stats stagger">
+        <div class="card stat hover" style="--i:0"><span class="ico"><svg class="i"><use href="#i-users"/></svg></span><span class="k">Pacientes activos</span><span class="v num" x-count="d.stats.pacientes_activos">0</span></div>
+        <div class="card stat hover" style="--i:1"><span class="ico"><svg class="i"><use href="#i-calendar"/></svg></span><span class="k">Citas hoy</span><span class="v num" x-count="d.stats.citas_hoy">0</span></div>
+        <div class="card stat hover" style="--i:2"><span class="ico" style="background:var(--ok-soft);color:var(--ok)"><svg class="i"><use href="#i-check"/></svg></span><span class="k">Completadas hoy</span><span class="v num" x-count="d.stats.citas_completadas">0</span></div>
+        <div class="card stat hover" style="--i:3"><span class="ico" style="background:var(--info-soft);color:var(--brand-2)"><svg class="i"><use href="#i-pill"/></svg></span><span class="k">Recetas este mes</span><span class="v num" x-count="d.stats.recetas_mes">0</span></div>
+      </div>
+
+      <div class="cols">
+        <div class="stack">
+          <div class="card">
+            <div class="card-head"><h3>Agenda de hoy</h3><a class="btn sm ghost" href="#/citas">Ver agenda <svg class="i"><use href="#i-right"/></svg></a></div>
+            <template x-if="!d.agenda.length"><div class="empty"><svg class="art" viewBox="0 0 96 96" fill="none"><circle cx="48" cy="48" r="40" fill="var(--brand-soft)"/><path d="M30 36c-6 0-9 5-9 10 0 5 2 8 3 13s2 17 6 17c4 0 4-12 6-15 1-2 2-2 3-2s2 0 3 2c2 3 2 15 6 15s5-12 6-17 3-8 3-13c0-5-3-10-9-10-4 0-6 2-9 2s-5-2-9-2z" transform="translate(6 -8) scale(.85)" fill="#fff" stroke="var(--brand)" stroke-width="2.2"/></svg><h3>Día libre</h3><p>No hay citas para hoy.</p><a class="btn primary sm" href="#/citas?nueva=1">Agendar una cita</a></div></template>
+            <div class="timeline stagger">
+              <template x-for="(a, i) in d.agenda" :key="a.hora + a.paciente">
+                <div class="tl-item" :class="{ done: a.estado === 'Completada' }" :style="'--i:' + i">
+                  <span class="t num" x-text="a.hora"></span>
+                  <div class="who"><strong x-text="a.paciente"></strong><span x-text="'Dr. ' + a.doctor"></span></div>
+                  <span class="badge" :class="{ ok: a.estado === 'Completada', warn: a.estado === 'Pendiente', bad: a.estado === 'Cancelada' }" x-text="a.estado"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Últimos 7 días</h3><span class="muted" style="font-size:13px" x-text="d.semana.reduce((s, x) => s + x.citas, 0) + ' citas'"></span></div>
+            <div class="bars">
+              <template x-for="(s, i) in d.semana" :key="s.fecha">
+                <div class="b" :class="{ today: i === 6 }" :style="'--i:' + i"><em x-text="s.citas"></em><i :style="'height:' + Math.max(8, s.citas / maxSemana * 100) + '%'"></i><span x-text="fmt.DIAS[fmt.parse(s.fecha).getDay()].slice(0, 3)"></span></div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <template x-if="pendientesInicio.length">
+            <div class="card">
+              <div class="card-head"><h3>Primeros pasos</h3><span class="badge brand plain" x-text="(d.inicio.length - pendientesInicio.length) + '/' + d.inicio.length"></span></div>
+              <div class="todo">
+                <template x-for="t in d.inicio" :key="t.id"><a :href="'#/' + t.ruta" :class="{ done: t.hecho }"><span class="dot"><svg class="i" x-show="t.hecho"><use href="#i-check"/></svg></span><span x-text="t.texto"></span></a></template>
+              </div>
+            </div>
+          </template>
+          <div class="card">
+            <div class="card-head"><h3>Progreso del día</h3></div>
+            <div class="ringbox">
+              <div class="ring" :style="'--len:' + circ + ';--off:' + (circ * (1 - progreso))">
+                <svg width="92" height="92" viewBox="0 0 92 92"><circle class="bg" cx="46" cy="46" r="38"/><circle class="fg" cx="46" cy="46" r="38"/></svg>
+                <b class="num"><span x-text="Math.round(progreso * 100)"></span>%</b>
+              </div>
+              <div><div style="font-weight:600" x-text="d.stats.citas_completadas + ' de ' + d.stats.citas_hoy + ' citas atendidas'"></div>
+                <p class="muted" style="font-size:13.5px;margin-top:4px" x-text="progreso >= 1 && d.stats.citas_hoy ? '¡Día completado! 🎉' : 'Marca cada cita como completada al terminar.'"></p></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Actividad reciente</h3></div>
+            <p class="muted" x-show="!d.actividad.length">Aquí verás lo que ocurre en tu consultorio.</p>
+            <ul class="feed">
+              <template x-for="a in d.actividad" :key="a.titulo + a.fecha + a.detalle"><li><div><b x-text="a.titulo" style="font-weight:600"></b><small x-text="a.detalle + ' · ' + fmt.ago(a.fecha)"></small></div></li></template>
+            </ul>
+          </div>
+          <div class="card" x-show="$store.app.is('Administrador')">
+            <div class="card-head"><h3>Copia de seguridad</h3><a class="btn sm ghost" href="#/copias">Gestionar</a></div>
+            <div class="big-status"><span class="pulse" :style="d.stats.estado_backup === 'Exitoso' ? '' : 'background:var(--warn)'"></span>
+              <div><b x-text="d.stats.ultima_copia"></b><div class="muted" style="font-size:13px" x-text="d.stats.estado_backup === 'Exitoso' ? 'Última copia exitosa' : 'Aún no tienes copias'"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
