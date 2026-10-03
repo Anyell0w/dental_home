@@ -1,0 +1,18 @@
+<div x-data="copiasView">
+  <div class="page-head"><div><h1>Copias de seguridad</h1><p>Descarga una copia completa de la base de datos de tu consultorio.</p></div>
+    <button class="btn primary" :class="{ 'is-busy': busy }" @click="crear()"><svg class="i"><use href="#i-database"/></svg>Crear copia ahora</button></div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="big-status"><span class="pulse" :style="ultima ? '' : 'background:var(--warn)'"></span>
+      <div><h3 x-text="ultima ? 'Tus datos están respaldados' : 'Aún no tienes copias'"></h3><p class="muted" style="margin-top:2px" x-text="ultima ? 'Última copia exitosa: ' + ultima.fecha : 'Crea tu primera copia para estar tranquilo.'"></p></div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Historial</h3></div>
+    <p class="muted" x-show="!lista.length">Sin copias registradas.</p>
+    <div class="stagger"><template x-for="(c, i) in lista" :key="c.id">
+      <div class="file-row" :style="'--i:' + Math.min(i, 10)"><div class="ico"><svg class="i"><use href="#i-database"/></svg></div>
+        <div class="grow"><b x-text="c.fecha"></b><div class="muted" style="font-size:13px" x-text="c.tipo"></div></div>
+        <span class="badge" :class="c.estado === 'Exitoso' ? 'ok' : 'bad'" x-text="c.estado"></span>
+        <a class="btn sm" x-show="c.disponible" :href="'/api/copias/' + c.id + '/descargar'"><svg class="i"><use href="#i-download"/></svg>Descargar</a></div>
+    </template></div>
+  </div>
+</div>

@@ -12,7 +12,9 @@ from config import PATHS
 
 class ReporteController:
     def __init__(self, gestor_reporte: GestorReporte, gestor_cita: GestorCita,
-                 gestor_paciente: GestorPaciente, gestor_registro: GestorRegistroClinico) -> None:
+                 gestor_paciente: GestorPaciente, gestor_registro: GestorRegistroClinico,
+                 rutas: Dict[str, str] = None) -> None:
+        self._rutas: Dict[str, str] = rutas or PATHS
         self._reporte_dao: GestorReporte = gestor_reporte
         self._cita_dao: GestorCita = gestor_cita
         self._paciente_dao: GestorPaciente = gestor_paciente
@@ -33,7 +35,7 @@ class ReporteController:
 
         extension = "pdf" if formato == "PDF" else "xlsx"
         nombre_archivo = f"reporte_{tipo.lower()}_{fecha_inicio}_a_{fecha_fin}.{extension}"
-        destino_completo = os.path.join(PATHS["reportes"], nombre_archivo)
+        destino_completo = os.path.join(self._rutas["reportes"], nombre_archivo)
 
         if formato == "PDF":
             PDFReporteGenerator.generar_reporte_estadistico(

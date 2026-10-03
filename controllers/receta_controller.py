@@ -22,7 +22,11 @@ class RecetaController:
         gestor_registro: GestorRegistroClinico,
         gestor_paciente: GestorPaciente,
         gestor_usuario: GestorUsuario,
+        rutas: Optional[Dict[str, str]] = None,
+        clinica: Optional[Dict[str, str]] = None,
     ) -> None:
+        self._clinica: Dict[str, str] = clinica or {}
+        self._rutas: Dict[str, str] = rutas or PATHS
         self._receta_dao: GestorReceta = gestor_receta
         self._medicamento_dao: GestorMedicamento = gestor_medicamento
         self._registro_dao: GestorRegistroClinico = gestor_registro
@@ -90,7 +94,7 @@ class RecetaController:
         colegiatura = getattr(doctor, "numeroColegiatura", None) or "N/A"
         if not ruta_destino:
             ruta_destino = os.path.join(
-                PATHS["recetas"], f"receta_{receta_id}_{receta.fecha}.pdf"
+                self._rutas["recetas"], f"receta_{receta_id}_{receta.fecha}.pdf"
             )
 
         ruta = PDFRecetaGenerator.generar_receta_pdf(
@@ -101,6 +105,7 @@ class RecetaController:
             colegiatura,
             receta.obtener_medicamentos(),
             ruta_destino,
+            **self._clinica,
         )
         self._receta_dao.actualizar_ruta_pdf(receta_id, ruta)
         return ruta

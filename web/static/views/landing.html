@@ -1,0 +1,114 @@
+<div class="land" x-data="landing">
+  <header class="nav-top">
+    <div class="in">
+      <a class="brand" href="#/" style="padding:0"><svg class="logo" viewBox="0 0 24 24"><use href="#i-tooth" fill="url(#g-brand)" stroke="none"/></svg><span>Dental Home</span></a>
+      <nav class="links">
+        <a href="#/" @click.prevent="scrollToId('funciones')">Funciones</a>
+        <a href="#/" @click.prevent="scrollToId('como')">Cómo funciona</a>
+        <a href="#/" @click.prevent="scrollToId('precios')">Precios</a>
+        <a href="#/" @click.prevent="scrollToId('faq')">Preguntas</a>
+      </nav>
+      <div class="sp"></div>
+      <button class="btn ghost icon" title="Cambiar tema" @click="$store.app.toggleTheme()"><svg class="i"><use :href="$store.app.theme === 'dark' ? '#i-sun' : '#i-moon'"/></svg></button>
+      <template x-if="$store.app.user"><a class="btn primary" href="#/inicio">Ir a mi panel</a></template>
+      <template x-if="!$store.app.user"><span style="display:contents"><a class="btn ghost hide-m" href="#/login">Entrar</a><a class="btn primary" href="#/registro">Empezar gratis</a></span></template>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow" style="animation:fadeUp .7s var(--ease) both"><b>Nuevo</b> 14 días gratis, sin tarjeta</div>
+      <h1 style="animation:fadeUp .7s .08s var(--ease) both">Tu consultorio,<br><em>sin papeleo.</em></h1>
+      <p class="lead" style="animation:fadeUp .7s .16s var(--ease) both">Agenda, pacientes, historial clínico, odontograma y recetas en un solo lugar. Listo en minutos, desde cualquier dispositivo.</p>
+      <div class="cta" style="animation:fadeUp .7s .24s var(--ease) both">
+        <a class="btn primary lg" href="#/registro">Crear mi consultorio <svg class="i"><use href="#i-right"/></svg></a>
+        <a class="btn lg" href="#/" @click.prevent="scrollToId('como')">Ver cómo funciona</a>
+      </div>
+      <div class="proof" style="animation:fadeUp .7s .32s var(--ease) both">
+        <div class="avs"><div class="avatar sm">LR</div><div class="avatar sm" style="background:linear-gradient(135deg,#3aa7f0,#7c6df0)">CM</div><div class="avatar sm" style="background:linear-gradient(135deg,#f0a13a,#f0587c)">AP</div></div>
+        <span>Pensado para consultorios de 1 a 10 profesionales</span>
+      </div>
+    </div>
+    <div class="stage" x-ref="stage" aria-label="Diente 3D interactivo: haz clic o arrastra">
+      <div class="fallback" x-show="!ok"><svg viewBox="0 0 24 24"><use href="#i-tooth" fill="url(#g-brand)" stroke="none"/></svg></div>
+      <div class="chipfloat" style="left:-2%;top:16%;animation-delay:-1s"><svg class="i"><use href="#i-calendar"/></svg><div>Cita confirmada<small>Hoy · 10:30 · Lucía F.</small></div></div>
+      <div class="chipfloat" style="right:-2%;bottom:20%;animation-delay:-3s"><svg class="i"><use href="#i-pill"/></svg><div>Receta lista<small>PDF en un clic</small></div></div>
+    </div>
+  </section>
+
+  <section class="section" id="funciones">
+    <div class="kicker" x-reveal>Todo en uno</div>
+    <h2 x-reveal>Lo esencial de tu consultorio, bien hecho.</h2>
+    <p class="sub" x-reveal>Sin módulos que no usarás ni pantallas recargadas. Cada herramienta hace una cosa y la hace rápido.</p>
+    <div class="features">
+      <template x-for="(f, i) in feats" :key="f.t">
+        <article class="card hover feat" x-reveal :style="'--i:' + (i % 3)">
+          <div class="ico"><svg class="i lg"><use :href="'#i-' + f.i"/></svg></div>
+          <h3 x-text="f.t"></h3><p x-text="f.d"></p>
+        </article>
+      </template>
+    </div>
+  </section>
+
+  <section class="section" id="como">
+    <div class="kicker" x-reveal>Cómo funciona</div>
+    <h2 x-reveal>De cero a tu primera cita en cinco minutos.</h2>
+    <div class="steps">
+      <div class="card step" x-reveal style="--i:0"><h3>Crea tu consultorio</h3><p>Registra tu clínica y obtén tu espacio privado con datos de ejemplo para explorar.</p></div>
+      <div class="card step" x-reveal style="--i:1"><h3>Suma a tu equipo</h3><p>Odontólogos, recepción y administración, cada uno con sus permisos.</p></div>
+      <div class="card step" x-reveal style="--i:2"><h3>Atiende y registra</h3><p>Agenda, consulta, odontograma y receta fluyen en un mismo recorrido.</p></div>
+    </div>
+    <div class="mock" x-reveal aria-hidden="true">
+      <div class="bar"><i></i><i></i><i></i></div>
+      <div class="body">
+        <div class="mside"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="mmain">
+          <div class="mstats"><div><span class="muted">Citas hoy</span><b>8</b></div><div><span class="muted">Pacientes</span><b>312</b></div><div><span class="muted">Completadas</span><b style="color:var(--ok)">5</b></div></div>
+          <div class="mrow"><b>09:00</b><span style="flex:1">Lucía Fernández</span><span class="badge ok">Completada</span></div>
+          <div class="mrow"><b>10:30</b><span style="flex:1">Carlos Quispe</span><span class="badge warn">Pendiente</span></div>
+          <div class="mrow"><b>11:30</b><span style="flex:1">Valeria Condori</span><span class="badge warn">Pendiente</span></div>
+          <div class="mrow"><b>15:00</b><span style="flex:1">Mateo Huanca</span><span class="badge warn">Pendiente</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="precios">
+    <div class="kicker" x-reveal>Precios</div>
+    <h2 x-reveal>Un plan para cada tamaño de consultorio.</h2>
+    <p class="sub" x-reveal>14 días de prueba con todas las funciones. Cambia o cancela cuando quieras.</p>
+    <div class="plans pricing">
+      <template x-for="(p, i) in planes" :key="p.id">
+        <article class="card plan" :class="{ hot: p.destacado }" x-reveal :style="'--i:' + i">
+          <span class="tag" x-show="p.destacado">Más elegido</span>
+          <div><h3 x-text="p.nombre" style="font-size:19px"></h3><p class="muted" x-text="p.descripcion" style="margin-top:4px"></p></div>
+          <div class="price">S/ <span x-text="p.precio"></span> <small>/ mes</small></div>
+          <ul>
+            <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.max_usuarios ? 'Hasta ' + p.max_usuarios + ' usuarios' : 'Usuarios ilimitados'"></span></li>
+            <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.max_pacientes ? 'Hasta ' + p.max_pacientes.toLocaleString('es-PE') + ' pacientes' : 'Pacientes ilimitados'"></span></li>
+            <template x-for="e in p.extras" :key="e"><li><svg class="i"><use href="#i-check"/></svg><span x-text="e"></span></li></template>
+          </ul>
+          <a class="btn lg" :class="{ primary: p.destacado }" :href="'#/registro?plan=' + p.id">Probar gratis</a>
+        </article>
+      </template>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="kicker" x-reveal>Preguntas frecuentes</div>
+    <h2 x-reveal>Antes de empezar.</h2>
+    <div class="faq" x-reveal>
+      <details><summary>¿Tengo que instalar algo?</summary><p>No. Dental Home funciona en el navegador de tu computadora, tablet o celular.</p></details>
+      <details><summary>¿Mis datos están separados de otros consultorios?</summary><p>Sí. Cada consultorio tiene su propia base de datos aislada y puedes descargar copias de seguridad cuando quieras.</p></details>
+      <details><summary>¿Qué pasa cuando termina la prueba?</summary><p>Podrás seguir consultando tu información; para registrar cambios nuevos eliges un plan. No perdemos nada de lo que cargaste.</p></details>
+      <details><summary>¿Puedo cambiar de plan o cancelar?</summary><p>Cuando quieras, desde la sección Suscripción. Sin permanencia.</p></details>
+    </div>
+  </section>
+
+  <section class="cta-band"><div class="box" x-reveal>
+    <h2>Dedica tu tiempo a tus pacientes, no a la agenda.</h2>
+    <a class="btn lg" href="#/registro">Empezar gratis <svg class="i"><use href="#i-right"/></svg></a>
+  </div></section>
+
+  <footer class="foot"><span>© <span x-text="new Date().getFullYear()"></span> Dental Home</span><span>Hecho con cuidado para consultorios dentales.</span></footer>
+</div>

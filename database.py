@@ -28,6 +28,21 @@ class Database:
             self._con: Optional[sqlite3.Connection] = None
             self._inicializado: bool = True
 
+    @classmethod
+    def para_ruta(cls, ruta: str) -> sqlite3.Connection:
+        """Abre (y migra) una base independiente sin pasar por el Singleton.
+        Lo usa la versión web: cada clínica tiene su propio archivo SQLite."""
+        inst = object.__new__(cls)
+        inst._con = None
+        inst._inicializado = True
+        inst.RUTA_DB = ruta
+        return inst.obtener_conexion()
+
+    def cerrar_conexion(self) -> None:
+        if self._con is not None:
+            self._con.close()
+            self._con = None
+
     def obtener_conexion(self) -> sqlite3.Connection:
         if self._con is None:
             try:

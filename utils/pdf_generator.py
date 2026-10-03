@@ -14,7 +14,8 @@ class PDFRecetaGenerator:
     @staticmethod
     def generar_receta_pdf(receta_obj: Any, paciente_nombre: str, dni: str, 
                            doctor_nombre: str, colegiatura: str, medicamentos: List[Any], 
-                           ruta_destino: str) -> str:
+                           ruta_destino: str, clinica: str = "DENTAL HOME",
+                           subtitulo: str = "Consultorio Dental Especializado | Av. Universitaria 1024, Puno | Contacto: +51 977 756 120") -> str:
         """Construye un documento PDF corporativo para prescripciones médicas."""
         try:
             doc = SimpleDocTemplate(ruta_destino, pagesize=letter,
@@ -28,9 +29,9 @@ class PDFRecetaGenerator:
             style_bold = ParagraphStyle('BoldStyle', parent=style_body, fontName='Helvetica-Bold')
 
             # Encabezado Clínico Principal
-            story.append(Paragraph("DENTAL HOME", style_titulo))
-            story.append(Paragraph("Consultorio Dental Especializado | Av. Universitaria 1024, Puno", style_body))
-            story.append(Paragraph("Contacto: +51 977 756 120", style_body))
+            story.append(Paragraph(clinica, style_titulo))
+            if subtitulo:
+                story.append(Paragraph(subtitulo, style_body))
             story.append(Spacer(1, 15))
             story.append(Table([[Paragraph("", ParagraphStyle('Line', borderPadding=1, borderWidth=1, borderColor=colors.HexColor('#E5E5EA')))]], colWidths=[530]))
             story.append(Spacer(1, 15))

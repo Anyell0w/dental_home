@@ -1,0 +1,20 @@
+<div class="auth" x-data="loginView">
+  <div class="auth-form">
+    <form class="inner" @submit.prevent="submit">
+      <a class="brand" href="#/" style="padding:0"><svg class="logo" viewBox="0 0 24 24"><use href="#i-tooth" fill="url(#g-brand)" stroke="none"/></svg><span>Dental Home</span></a>
+      <div><h1>Bienvenido de vuelta</h1><p class="muted" style="margin-top:8px">Entra a tu consultorio.</p></div>
+      <div class="field"><label for="c">Código de la clínica</label><input id="c" class="input" x-model="f.clinica" placeholder="mi-consultorio" autocomplete="organization" autocapitalize="off" required></div>
+      <div class="field"><label for="u">Usuario</label><input id="u" class="input" x-model="f.usuario" autocomplete="username" autocapitalize="off" required></div>
+      <div class="field"><label for="p">Contraseña</label><input id="p" type="password" class="input" x-model="f.password" autocomplete="current-password" required></div>
+      <div class="error-text" x-show="error" x-text="error"></div>
+      <button class="btn primary lg" :class="{ 'is-busy': busy }" style="width:100%">Entrar</button>
+      <p class="muted" style="text-align:center">¿Aún no tienes cuenta? <a class="link" href="#/registro">Crea tu consultorio</a></p>
+    </form>
+  </div>
+  <div class="auth-art">
+    <span class="orb" style="width:140px;height:140px;top:12%;left:14%"></span>
+    <span class="orb" style="width:70px;height:70px;bottom:18%;right:16%;animation-delay:-2s"></span>
+    <span class="orb" style="width:36px;height:36px;top:30%;right:22%;animation-delay:-4s"></span>
+    <blockquote>“Pasamos de la libreta a tener toda la agenda y los historiales en el celular.”<small>Consultorio dental · Puno</small></blockquote>
+  </div>
+</div>

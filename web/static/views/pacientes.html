@@ -1,0 +1,70 @@
+<div x-data="pacientesView">
+  <div class="page-head">
+    <div><h1>Pacientes</h1><p><span class="num" x-text="lista.length"></span> <span x-text="todos ? 'registros' : 'activos'"></span></p></div>
+    <button class="btn primary" @click="nuevo()"><svg class="i"><use href="#i-userplus"/></svg>Nuevo paciente</button>
+  </div>
+
+  <div class="toolbar">
+    <div style="position:relative;flex:1;min-width:220px;max-width:420px">
+      <svg class="i" style="position:absolute;left:14px;top:13px;color:var(--muted)"><use href="#i-search"/></svg>
+      <input class="input" style="padding-left:42px" placeholder="Buscar por nombre, apellido o DNI" x-model="q" @input.debounce.250ms="cargar()">
+    </div>
+    <label class="check" style="align-items:center"><input type="checkbox" x-model="todos" @change="cargar()">Mostrar dados de baja</label>
+  </div>
+
+  <div class="card" style="padding:14px 8px">
+    <template x-if="cargando"><div style="padding:12px 14px;display:grid;gap:12px"><template x-for="n in 5"><div class="skel" style="height:44px"></div></template></div></template>
+    <template x-if="!cargando && !lista.length">
+      <div class="empty"><svg class="art" viewBox="0 0 96 96" fill="none"><circle cx="48" cy="48" r="40" fill="var(--brand-soft)"/><circle cx="48" cy="40" r="11" fill="#fff" stroke="var(--brand)" stroke-width="2.2"/><path d="M26 72c2-12 11-18 22-18s20 6 22 18" fill="#fff" stroke="var(--brand)" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <h3 x-text="q ? 'Sin coincidencias' : 'Aún no hay pacientes'"></h3><p x-text="q ? 'Prueba con otro nombre o DNI.' : 'Registra a tu primer paciente para empezar.'"></p>
+        <button class="btn primary sm" x-show="!q" @click="nuevo()">Registrar paciente</button></div>
+    </template>
+    <div class="table-wrap" x-show="!cargando && lista.length">
+      <table class="table">
+        <thead><tr><th>Paciente</th><th class="hide-m">DNI</th><th class="hide-m">Teléfono</th><th>Edad</th><th></th></tr></thead>
+        <tbody>
+          <template x-for="(p, i) in lista" :key="p.id">
+            <tr :style="'--i:' + Math.min(i, 14)">
+              <td><div class="cell-user"><div class="avatar" :style="p.activo ? '' : 'background:var(--muted)'" x-text="fmt.initials(p.nombre + ' ' + p.apellido)"></div>
+                <div><strong x-text="p.apellido + ', ' + p.nombre"></strong><span x-text="p.sexo === 'F' ? 'Femenino' : 'Masculino'"></span> <span class="badge bad plain" x-show="!p.activo" style="height:20px">Baja</span></div></div></td>
+              <td class="num hide-m" x-text="p.dni"></td>
+              <td class="hide-m" x-text="p.telefono || '—'"></td>
+              <td class="num" x-text="p.edad !== null ? p.edad + ' años' : '—'"></td>
+              <td><div class="row-actions">
+                <a class="btn ghost icon sm" title="Historial clínico" x-show="$store.app.is('Doctor','Administrador')" :href="'#/historial/' + p.id"><svg class="i"><use href="#i-file"/></svg></a>
+                <button class="btn ghost icon sm" title="Editar" @click="editar(p)"><svg class="i"><use href="#i-edit"/></svg></button>
+                <button class="btn ghost icon sm danger" title="Dar de baja" x-show="p.activo && $store.app.is('Administrador','Secretaria')" @click="baja(p)"><svg class="i"><use href="#i-trash"/></svg></button>
+              </div></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <template x-if="form">
+    <div class="overlay right" @click.self="form = null" @keydown.escape.window="form = null">
+      <form class="drawer" @submit.prevent="guardar">
+        <h2 x-text="form.id ? 'Editar paciente' : 'Nuevo paciente'"></h2>
+        <p class="sub" x-text="form.id ? 'Actualiza los datos de contacto.' : 'Se creará también su historial clínico.'"></p>
+        <div class="form">
+          <div class="grid-2">
+            <div class="field"><label>Nombre</label><input class="input" x-model="form.nombre" required maxlength="60" x-init="$nextTick(() => $el.focus())"></div>
+            <div class="field"><label>Apellido</label><input class="input" x-model="form.apellido" required maxlength="60"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>DNI</label><input class="input num" x-model="form.dni" required inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="8 dígitos"></div>
+            <div class="field"><label>Teléfono</label><input class="input" x-model="form.telefono" inputmode="tel" maxlength="20"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>Fecha de nacimiento</label><input type="date" class="input" x-model="form.fechaNacimiento" required :max="fmt.today()"></div>
+            <div class="field"><label>Sexo</label><select class="input" x-model="form.sexo" required><option value="">Seleccionar</option><option value="F">Femenino</option><option value="M">Masculino</option></select></div>
+          </div>
+          <div class="field"><label>Dirección</label><input class="input" x-model="form.direccion" maxlength="120"></div>
+          <div class="error-text" x-show="error" x-text="error"></div>
+          <div class="actions"><button type="button" class="btn" @click="form = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }" x-text="form.id ? 'Guardar cambios' : 'Registrar paciente'"></button></div>
+        </div>
+      </form>
+    </div>
+  </template>
+</div>

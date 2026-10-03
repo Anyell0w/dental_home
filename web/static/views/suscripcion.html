@@ -1,0 +1,36 @@
+<div x-data="suscripcionView">
+  <div class="page-head"><div><h1>Suscripción</h1><p>Gestiona tu plan y revisa el uso de tu consultorio.</p></div></div>
+
+  <div class="card" style="margin-bottom:22px">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+      <div style="flex:1;min-width:240px">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><h3 style="font-size:20px" x-text="'Plan ' + sub.plan.nombre"></h3>
+          <span class="badge" :class="{ ok: sub.estado === 'activa', warn: sub.estado === 'prueba', bad: sub.estado === 'vencida' || sub.estado === 'cancelada' }" x-text="{ prueba: 'En prueba', activa: 'Activa', vencida: 'Vencida', cancelada: 'Cancelada' }[sub.estado]"></span></div>
+        <p class="muted" x-text="sub.estado === 'prueba' ? 'Te quedan ' + sub.dias_restantes + ' días de prueba (hasta el ' + fmt.short(sub.vence) + ').' : sub.estado === 'activa' ? 'Vigente hasta el ' + fmt.short(sub.vence) + '.' : 'Elige un plan para volver a registrar cambios.'"></p>
+      </div>
+      <div style="display:grid;gap:14px;min-width:260px;flex:1">
+        <div><div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px"><span>Usuarios</span><b class="num" x-text="uso.usuarios + ' / ' + (sub.plan.max_usuarios || '∞')"></b></div><div class="meter" :class="{ hot: pct('usuarios') > 85 }"><i :style="'--w:' + pct('usuarios') + '%'"></i></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px"><span>Pacientes</span><b class="num" x-text="uso.pacientes.toLocaleString('es-PE') + ' / ' + (sub.plan.max_pacientes ? sub.plan.max_pacientes.toLocaleString('es-PE') : '∞')"></b></div><div class="meter" :class="{ hot: pct('pacientes') > 85 }"><i :style="'--w:' + pct('pacientes') + '%'"></i></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="plans stagger">
+    <template x-for="(p, i) in planes" :key="p.id">
+      <article class="card plan" :class="{ hot: p.destacado }" :style="'--i:' + i">
+        <span class="tag" x-show="p.destacado">Más elegido</span>
+        <div><h3 x-text="p.nombre" style="font-size:19px"></h3><p class="muted" x-text="p.descripcion" style="margin-top:4px"></p></div>
+        <div class="price">S/ <span x-text="p.precio"></span> <small>/ mes</small></div>
+        <ul>
+          <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.max_usuarios ? 'Hasta ' + p.max_usuarios + ' usuarios' : 'Usuarios ilimitados'"></span></li>
+          <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.max_pacientes ? 'Hasta ' + p.max_pacientes.toLocaleString('es-PE') + ' pacientes' : 'Pacientes ilimitados'"></span></li>
+          <template x-for="e in p.extras" :key="e"><li><svg class="i"><use href="#i-check"/></svg><span x-text="e"></span></li></template>
+        </ul>
+        <button class="btn lg" :class="{ primary: p.destacado }" :disabled="actual(p)" @click="elegir(p)" x-text="actual(p) ? 'Tu plan actual' : (sub.estado === 'activa' ? 'Cambiar a ' + p.nombre : 'Activar ' + p.nombre)"></button>
+      </article>
+    </template>
+  </div>
+
+  <p class="hint" style="margin-top:18px;text-align:center">Modo demostración: la activación del plan no genera cobros reales.</p>
+  <div style="text-align:center;margin-top:10px" x-show="sub.estado === 'activa' || sub.estado === 'prueba'"><button class="btn ghost sm danger" @click="cancelar()">Cancelar suscripción</button></div>
+</div>

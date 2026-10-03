@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dental Home — Software para consultorios dentales</title>
+  <meta name="description" content="Agenda, pacientes, historial clínico, odontograma y recetas en un solo lugar. Suscripción simple para consultorios dentales pequeños y medianos.">
+  <meta name="theme-color" content="#12b5a5">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2312b5a5' d='M7 3C4.5 3 3 5 3 7.500c0 2 1 3.300 1.400 5.500.4 2.200.7 8 2.600 8 1.600 0 1.600-5 2.600-6.500.5-.8 1-.8 1.400-.8s.9 0 1.400.8c1 1.500 1 6.500 2.600 6.500 1.900 0 2.200-5.800 2.600-8C20 10.800 21 9.500 21 7.500 21 5 19.500 3 17 3c-1.800 0-2.700 1-5 1S8.800 3 7 3z'/%3E%3C/svg%3E">
+  <script src="/static/js/theme.js"></script>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script defer src="/static/js/core.js"></script>
+  <script defer src="/static/js/shell.js"></script>
+  <script defer src="/static/js/views.js"></script>
+  <script defer src="/static/js/odontograma.js"></script>
+  <script defer src="/static/vendor/alpine.min.js"></script>
+</head>
+<body>
+<!-- Sprite de iconos (trazo 1.7, estilo lineal) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-brand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b5a5"/><stop offset="1" stop-color="#3aa7f0"/></linearGradient>
+    <linearGradient id="grad-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12b5a5"/><stop offset="1" stop-color="#3aa7f0"/></linearGradient>
+  </defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="3"/><path d="M1 10h22"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 0 0-7-7l-10 10a4.95 4.95 0 0 0 7 7z"/><path d="m8.5 8.5 7 7"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></symbol>
+  <symbol id="i-userplus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.1 5.9L20 11l-5.9 2.1L12 19l-2.1-5.9L4 11l5.9-2.1z"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3M17 6l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-tooth" viewBox="0 0 24 24"><path d="M7 3C4.5 3 3 5 3 7.5c0 2 1 3.3 1.4 5.5.4 2.2.7 8 2.6 8 1.6 0 1.6-5 2.6-6.5.5-.8 1-.8 1.4-.8s.9 0 1.4.8c1 1.5 1 6.5 2.6 6.5 1.9 0 2.2-5.8 2.6-8C20 10.8 21 9.5 21 7.5 21 5 19.5 3 17 3c-1.8 0-2.7 1-5 1S8.8 3 7 3z"/></symbol>
+</svg>
+
+<div id="root" x-data x-cloak>
+  <!-- Páginas públicas: landing, login, registro -->
+  <template x-if="$store.app.ready && $store.router.pub">
+    <div class="view" x-html="$store.router.html"></div>
+  </template>
+
+  <!-- Aplicación -->
+  <template x-if="$store.app.ready && !$store.router.pub">
+    <div class="shell" x-data="shell">
+      <aside class="side">
+        <a class="brand" href="#/inicio">
+          <svg class="logo" viewBox="0 0 24 24"><use href="#i-tooth" fill="url(#g-brand)" stroke="none"/></svg>
+          <span>Dental Home</span>
+        </a>
+        <nav class="nav">
+          <template x-for="n in nav" :key="n.r">
+            <a :href="'#/' + n.r" :class="{ on: $store.router.name === n.r }">
+              <svg class="i"><use :href="'#i-' + n.i"/></svg><span x-text="n.t"></span>
+            </a>
+          </template>
+        </nav>
+        <div class="side-foot">
+          <div class="usage" x-show="$store.app.is('Administrador') && $store.app.uso">
+            <div style="display:flex;justify-content:space-between;gap:8px;white-space:nowrap"><b x-text="'Plan ' + $store.app.sub.plan.nombre"></b>
+              <span class="muted" x-text="$store.app.sub.estado === 'prueba' ? $store.app.sub.dias_restantes + ' d prueba' : ''"></span></div>
+            <template x-if="$store.app.sub.plan.max_pacientes">
+              <div><div class="muted" style="font-size:12px;margin-bottom:5px" x-text="$store.app.uso.pacientes + ' / ' + $store.app.sub.plan.max_pacientes + ' pacientes'"></div>
+                <div class="meter" :class="{ hot: pct('pacientes') > 85 }"><i :style="'--w:' + pct('pacientes') + '%'"></i></div></div>
+            </template>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 8px">
+            <div class="avatar sm" x-text="fmt.initials($store.app.user.usuario)"></div>
+            <div style="min-width:0;flex:1"><div style="font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis" x-text="$store.app.user.usuario"></div>
+              <div class="muted" style="font-size:12px" x-text="$store.app.user.rol"></div></div>
+            <button class="btn ghost icon sm" title="Cerrar sesión" @click="$store.app.logout()"><svg class="i"><use href="#i-logout"/></svg></button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="top">
+          <button class="search" @click="$store.ui.cmdk = true">
+            <svg class="i"><use href="#i-search"/></svg><span>Buscar pacientes o ir a…</span><span class="kbd" style="flex:none">Ctrl K</span>
+          </button>
+          <div class="spacer"></div>
+          <span class="muted hide-m" style="font-size:13.5px;font-weight:550" x-text="$store.app.clinica.nombre"></span>
+          <button class="btn ghost icon" title="Cambiar tema" @click="$store.app.toggleTheme()">
+            <svg class="i"><use :href="$store.app.theme === 'dark' ? '#i-sun' : '#i-moon'"/></svg>
+          </button>
+          <button class="btn ghost icon hide-d" title="Cerrar sesión" @click="$store.app.logout()"><svg class="i"><use href="#i-logout"/></svg></button>
+        </header>
+
+        <template x-if="$store.app.sub.estado === 'prueba'">
+          <div class="banner"><svg class="i"><use href="#i-spark"/></svg>
+            <span x-text="'Prueba gratuita: te quedan ' + $store.app.sub.dias_restantes + ' días con todas las funciones del plan ' + $store.app.sub.plan.nombre + '.'"></span>
+            <a x-show="$store.app.is('Administrador')" href="#/suscripcion">Elegir plan</a></div>
+        </template>
+        <template x-if="!$store.app.sub.vigente">
+          <div class="banner bad"><svg class="i"><use href="#i-alert"/></svg>
+            <span>Tu suscripción no está activa. Puedes consultar tu información, pero no registrar cambios.</span>
+            <a x-show="$store.app.is('Administrador')" href="#/suscripcion">Reactivar</a></div>
+        </template>
+
+        <main class="page view" x-html="$store.router.html"></main>
+      </div>
+
+      <nav class="tabbar">
+        <template x-for="n in nav.slice(0, 5)" :key="n.r">
+          <a :href="'#/' + n.r" :class="{ on: $store.router.name === n.r }"><svg class="i"><use :href="'#i-' + n.i"/></svg><span x-text="n.t"></span></a>
+        </template>
+      </nav>
+    </div>
+  </template>
+
+  <!-- Paleta de comandos -->
+  <template x-if="$store.ui.cmdk">
+    <div class="overlay" @click.self="$store.ui.cmdk = false" x-data="cmdk" @keydown.escape.window="$store.ui.cmdk = false">
+      <div class="cmdk" @keydown.arrow-down.prevent="move(1)" @keydown.arrow-up.prevent="move(-1)" @keydown.enter.prevent="go()">
+        <input x-ref="q" x-model="q" @input.debounce.180ms="search()" placeholder="Busca un paciente o escribe una sección…" autofocus x-init="$nextTick(() => $refs.q.focus())">
+        <ul>
+          <template x-for="(it, idx) in items" :key="it.k">
+            <li :class="{ on: idx === sel, grp: it.grp }" @mouseenter="!it.grp && (sel = idx)" @click="!it.grp && go(idx)">
+              <template x-if="it.grp"><span x-text="it.t"></span></template>
+              <template x-if="!it.grp"><span style="display:contents"><svg class="i"><use :href="'#i-' + it.i"/></svg><span x-text="it.t"></span><small x-text="it.s"></small></span></template>
+            </li>
+          </template>
+          <li x-show="!items.length" class="muted" style="cursor:default">Sin resultados</li>
+        </ul>
+      </div>
+    </div>
+  </template>
+
+  <!-- Confirmación -->
+  <template x-if="$store.ui.dialog">
+    <div class="overlay" @keydown.escape.window="$store.ui.answer(false)" @click.self="$store.ui.answer(false)">
+      <div class="modal" style="width:min(420px,100%)" role="alertdialog">
+        <h2 x-text="$store.ui.dialog.title"></h2>
+        <p class="sub" x-text="$store.ui.dialog.text" style="margin-bottom:22px"></p>
+        <div class="actions">
+          <button class="btn" @click="$store.ui.answer(false)">Cancelar</button>
+          <button class="btn" :class="$store.ui.dialog.danger ? 'primary' : 'primary'" :style="$store.ui.dialog.danger ? 'background:var(--bad);box-shadow:none' : ''" @click="$store.ui.answer(true)" x-text="$store.ui.dialog.ok || 'Confirmar'"></button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <div class="toasts" aria-live="polite">
+    <template x-for="t in $store.ui.toasts" :key="t.id">
+      <div class="toast" :class="t.type"><svg class="i"><use :href="t.type === 'error' ? '#i-alert' : '#i-check'"/></svg><span x-text="t.msg"></span></div>
+    </template>
+  </div>
+</div>
+<noscript><p style="padding:40px;text-align:center">Dental Home necesita JavaScript para funcionar.</p></noscript>
+</body>
+</html>
