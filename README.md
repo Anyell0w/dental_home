@@ -32,6 +32,8 @@ python -m web.app                    # http://localhost:5000
 - **Frontend sin build:** Alpine.js + three.js vendorizados en `web/static/vendor` (landing con diente 3D).
   Guía de diseño en `.claude/skills/dental-ui/SKILL.md`.
 
+**Brief corporativo** (empresa, objetivos, competencia, presupuesto y plazos): [`docs/brief-corporativo-dental-home.pdf`](docs/brief-corporativo-dental-home.pdf). Se regenera con `python docs/brief_corporativo.py` (los supuestos financieros están en ese archivo).
+
 ### Pendiente antes de cobrar de verdad
 1. **Pasarela de pago:** `POST /api/suscripcion/plan` activa el plan *sin cobrar* (modo demo). Integrar Stripe/Culqi/MercadoPago
    y activar el plan desde su webhook.
