@@ -1,0 +1,37 @@
+<div x-data="auditoriaView">
+  <div class="page-head"><div><div class="kicker">Trazabilidad</div><h1 style="margin-top:8px">Auditoría</h1><p>Quién hizo qué y cuándo. Este registro no se puede modificar ni borrar.</p></div></div>
+  <form class="card" style="margin-bottom:16px" @submit.prevent="cargar(1)">
+    <div class="grid-3" style="grid-template-columns:1fr 1fr 1.2fr 1.2fr auto;align-items:end">
+      <div class="field"><label>Desde</label><input type="date" class="input" x-model="f.desde"></div>
+      <div class="field"><label>Hasta</label><input type="date" class="input" x-model="f.hasta"></div>
+      <div class="field"><label>Usuario</label><select class="input" x-model="f.usuario"><option value="">Todos</option><template x-for="u in d?.usuarios || []" :key="u.id"><option :value="u.id" x-text="u.usuario"></option></template></select></div>
+      <div class="field"><label>Acción</label><select class="input" x-model="f.accion"><option value="">Todas</option><template x-for="a in d?.acciones || []" :key="a"><option :value="a" x-text="etiqueta(a)"></option></template></select></div>
+      <button class="btn primary" :class="{ 'is-busy': cargando }"><svg class="i"><use href="#i-search"/></svg>Filtrar</button>
+    </div>
+  </form>
+  <div class="card" style="padding:16px 10px">
+    <template x-if="d && !d.items.length"><div class="empty"><h3>Sin eventos</h3><p>No hay registros con esos filtros.</p></div></template>
+    <div class="table-wrap" x-show="d && d.items.length">
+      <table class="table audit">
+        <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th class="hide-m">Detalle</th><th class="hide-m">IP</th></tr></thead>
+        <tbody>
+          <template x-for="(x, i) in d?.items || []" :key="x.id">
+            <tr :style="'--i:' + Math.min(i, 14)">
+              <td class="num" style="white-space:nowrap" x-text="x.cuando"></td>
+              <td><b x-text="x.usuario"></b></td>
+              <td><span class="badge" :class="{ bad: /fallido|bloqueado|baja|cancelada|desactivado|suspendida/.test(x.accion), ok: /login$|pagado|creada|completada/.test(x.accion) }" x-text="etiqueta(x.accion)"></span>
+                <small x-text="x.recurso + (x.recursoId ? ' #' + x.recursoId : '')"></small></td>
+              <td class="hide-m muted" style="font-size:13px" x-text="detalle(x)"></td>
+              <td class="hide-m muted num" style="font-size:13px" x-text="x.ip"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+    <div class="pager" x-show="d && d.paginas > 1">
+      <span class="muted" style="font-size:13px" x-text="d?.total + ' eventos · página ' + pagina + ' de ' + d?.paginas"></span>
+      <button class="btn sm icon" :disabled="pagina <= 1" @click="cargar(pagina - 1)"><svg class="i"><use href="#i-left"/></svg></button>
+      <button class="btn sm icon" :disabled="pagina >= d?.paginas" @click="cargar(pagina + 1)"><svg class="i"><use href="#i-right"/></svg></button>
+    </div>
+  </div>
+</div>

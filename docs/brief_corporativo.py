@@ -8,27 +8,27 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import Paragraph
-from reportlab.lib.fonts import addMapping
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 SALIDA = os.path.join(AQUI, "brief-corporativo-dental-home.pdf")
+LOGO = os.path.join(os.path.dirname(AQUI), "web", "static", "img", "logo.png")
 FUENTES = "/usr/share/fonts/truetype/liberation/LiberationSans-"
 for nombre, archivo in (("S", "Regular"), ("SB", "Bold"), ("SI", "Italic"), ("SBI", "BoldItalic")):
     pdfmetrics.registerFont(TTFont(nombre, FUENTES + archivo + ".ttf"))
 pdfmetrics.registerFontFamily("S", normal="S", bold="SB", italic="SI", boldItalic="SBI")
 
 W, H, MX = 960, 540, 64
-INK, INK2, MUTED, LINE = HexColor("#1D1D1F"), HexColor("#424245"), HexColor("#6E6E73"), HexColor("#D2D2D7")
+INK, INK2, MUTED, LINE = HexColor("#1E1433"), HexColor("#3B2D57"), HexColor("#6B5F80"), HexColor("#E1D5E7")
 BG, SURF, SOFT = HexColor("#FBFBFD"), HexColor("#FFFFFF"), HexColor("#F5F5F7")
-BRAND, BRAND2, BRANDINK = HexColor("#12B5A5"), HexColor("#3AA7F0"), HexColor("#0B7F74")
-BRANDSOFT, WARN, BAD, DARK = HexColor("#E3F6F3"), HexColor("#F0A13A"), HexColor("#E5484D"), HexColor("#05090B")
+BRAND, BRAND2, BRANDINK = HexColor("#7B1FA2"), HexColor("#B39DDB"), HexColor("#4A2E80")
+BRANDSOFT, WARN, BAD, DARK = HexColor("#F4F1F8"), HexColor("#F0A13A"), HexColor("#C2185B"), HexColor("#2A1A4A")
 
 MESES = ["Nov 26", "Dic", "Ene 27", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct 27"]
 
 # ----------------------------------------------------------------------------------------------
 # Modelo financiero (soles). Todo lo que se muestra en el brief deriva de aquí.
 # ----------------------------------------------------------------------------------------------
-PLANES = [("Esencial", 59, 0.45), ("Profesional", 129, 0.45), ("Clínica", 249, 0.10)]
+PLANES = [("Esencial", 49, 0.45), ("Profesional", 99, 0.45), ("Clínica", 189, 0.10)]  # precios de db/schema.sql
 ARPU = sum(p * m for _, p, m in PLANES)
 COMISION = 0.04            # pasarela de pago sobre ingresos (supuesto)
 CONTINGENCIA = 0.10
@@ -136,24 +136,6 @@ def pill(c, txt, x, top, color=BRANDINK, fill=BRANDSOFT, size=9.5):
     return w
 
 
-TOOTH = [((0.25, 1.05), (0.7, 1.28), (1.0, 1.12)), ((1.38, 0.92), (1.48, 0.42), (1.32, -0.02)),
-         ((1.2, -0.4), (1.14, -0.85), (1.02, -1.3)), ((0.92, -1.78), (0.56, -1.82), (0.5, -1.36)),
-         ((0.44, -0.95), (0.32, -0.62), (0, -0.62)), ((-0.32, -0.62), (-0.44, -0.95), (-0.5, -1.36)),
-         ((-0.56, -1.82), (-0.92, -1.78), (-1.02, -1.3)), ((-1.14, -0.85), (-1.2, -0.4), (-1.32, -0.02)),
-         ((-1.48, 0.42), (-1.38, 0.92), (-1.0, 1.12)), ((-0.7, 1.28), (-0.25, 1.05), (0, 0.78))]
-
-
-def tooth(c, cx, cy, k, c1=HexColor("#FFFFFF"), c2=HexColor("#9FE9DF")):
-    def path():
-        p = c.beginPath(); p.moveTo(cx, cy + (0.78 + 0.27) * k)
-        for a, b, d in TOOTH:
-            p.curveTo(cx + a[0] * k, cy + (a[1] + 0.27) * k, cx + b[0] * k, cy + (b[1] + 0.27) * k,
-                      cx + d[0] * k, cy + (d[1] + 0.27) * k)
-        p.close(); return p
-    c.saveState(); c.setFillAlpha(1); c.clipPath(path(), stroke=0, fill=0)
-    c.linearGradient(cx - 1.4 * k, cy + 1.6 * k, cx + 1.2 * k, cy - 1.6 * k, (c1, c2)); c.restoreState()
-
-
 def fondo(c, oscuro=False):
     c.setFillColor(DARK if oscuro else BG); c.rect(0, 0, W, H, stroke=0, fill=1)
 
@@ -166,14 +148,14 @@ def cabecera(c, n, kicker, titulo, sub=None, ancho=800):
 
 
 def pie(c, n, total):
-    tooth(c, MX + 6, 26, 5.2, HexColor("#12B5A5"), HexColor("#3AA7F0"))
+    c.drawImage(LOGO, MX - 2, 22, 16, 15.5, mask="auto")
     T(c, "Dental Home  ·  Brief corporativo  ·  Confidencial", MX + 20, 503 + 6, 8.5, MUTED)
     T(c, f"{n:02d} / {total:02d}", W - MX, 503 + 6, 8.5, MUTED, anchor="r")
 
 
 def kpi(c, x, top, w, h, valor, etiqueta, nota=None, destacado=False):
     card(c, x, top, w, h, fill=INK if destacado else SURF, stroke=None if destacado else LINE)
-    col, sub = (HexColor("#FFFFFF"), HexColor("#A1A1A6")) if destacado else (INK, MUTED)
+    col, sub = (HexColor("#FFFFFF"), HexColor("#E1D5E7")) if destacado else (INK, MUTED)
     T(c, valor, x + 20, top + 44, 28, col, "SB")
     T(c, etiqueta, x + 20, top + 64, 11, col, "SB")
     if nota:
@@ -190,16 +172,15 @@ def p_portada(c, n, total):
     for k in range(50):
         c.setFillColor(Ac(BRAND2, 0.010)); c.circle(790, 360, 210 - k * 3.6, stroke=0, fill=1)
     alpha(c, 1)
-    tooth(c, 700, 262, 118)
-    c.saveState(); c.setFillColor(Color(1, 1, 1, alpha=0.30))
-    c.ellipse(655, 330, 690, 380, stroke=0, fill=1); c.restoreState(); alpha(c, 1)
+    c.setFillColor(HexColor("#FFFFFF")); c.roundRect(590, 160, 220, 214, 54, stroke=0, fill=1)
+    c.drawImage(LOGO, 620, 186, 160, 155, mask="auto")
     for (x, y, r, a) in [(560, 420, 2.4, .8), (860, 150, 3, .7), (590, 130, 1.8, .6), (850, 410, 2, .7),
                          (780, 460, 1.6, .6), (520, 300, 1.6, .5), (880, 280, 2.2, .6)]:
-        c.setFillColor(Ac(HexColor("#7FF0E2"), a)); c.circle(x, y, r, stroke=0, fill=1)
+        c.setFillColor(Ac(HexColor("#B39DDB"), a)); c.circle(x, y, r, stroke=0, fill=1)
     alpha(c, 1)
     T(c, "BRIEF CORPORATIVO  ·  2026", MX, 150, 10.5, BRAND, "SB", space=2)
     T(c, "Dental Home", MX, 232, 66, HexColor("#FFFFFF"), "SB")
-    P(c, "El software que cuida tu consultorio.<br/>Simple, en el navegador y por suscripción.", MX, 262, 460, 20, HexColor("#A1A1A6"), 29)
+    P(c, "El software que cuida tu consultorio.<br/>Simple, en el navegador y por suscripción.", MX, 262, 460, 20, HexColor("#E1D5E7"), 29)
     grad_rect(c, MX, 372, 120, 3, 1.5)
     T(c, "Octubre 2026  ·  v1.0  ·  Documento confidencial", MX, 480, 10, HexColor("#6E6E73"))
 
@@ -210,7 +191,7 @@ def p_resumen(c, n, total):
                           "Evolución de una aplicación de escritorio ya validada en funciones."),
                ("PARA QUIÉN", "Consultorios dentales pequeños y medianos (1 a 10 usuarios) que hoy dependen de papel, "
                               "WhatsApp, Excel o un programa instalado en una sola PC."),
-               ("CÓMO GANA DINERO", f"Suscripción mensual en soles desde S/ 59, con 14 días de prueba. Ingreso medio "
+               ("CÓMO GANA DINERO", f"Suscripción mensual en soles desde S/ 49, con 14 días de prueba. Ingreso medio "
                                     f"esperado por clínica: ≈ {s(ARPU)} al mes."),
                ("QUÉ SE PIDE", f"Aprobar un presupuesto de {s(TOTAL)} a 12 meses, en fases con puntos de decisión, "
                                f"para pasar de producto funcional a negocio que cobra.")]
@@ -220,7 +201,7 @@ def p_resumen(c, n, total):
         h = P(c, d, MX, y + 8, 410, 12.5, INK2, 18)
         y += 8 + h + 22
     x0, w, h = 520, 184, 150
-    kpi(c, x0, 170, w, h, "3 planes", "S/ 59 – 249 al mes", "Esencial, Profesional y Clínica")
+    kpi(c, x0, 170, w, h, "3 planes", "S/ 49 – 189 al mes", "Esencial, Profesional y Clínica")
     kpi(c, x0 + w + 16, 170, w, h, "14 días", "de prueba gratis", "Con las funciones del plan Profesional")
     kpi(c, x0, 170 + h + 16, w, h, s(TOTAL).replace("S/ ", "S/ "), "presupuesto a 12 meses", f"Fase 1 (2 meses): {s(FASE1)}")
     kpi(c, x0 + w + 16, 170 + h + 16, w, h, f"≈ {CLI12:.0f}", "clínicas de pago al mes 12", f"MRR ≈ {s(MRR12)} · escenario base", destacado=True)
@@ -245,12 +226,12 @@ def p_empresa(c, n, total):
     card(c, MX, 350, 832, 128, fill=INK, stroke=None)
     T(c, "ESTADO ACTUAL", MX + 26, 382, 9, BRAND, "SB", space=1.4)
     P(c, "<b><font color='#FFFFFF'>Producto funcional (MVP completo).</font></b> Migración de la aplicación de escritorio "
-         "(Python/Tkinter) a web (Flask, Alpine.js, three.js): pacientes, citas, historial, odontograma, recetas, "
-         "reportes, copias, equipo y suscripciones con límites por plan.", MX + 26, 392, 380, 11, HexColor("#A1A1A6"), 16)
+         "(Python/Tkinter) a web sobre PostgreSQL 16 con aislamiento por clínica (RLS): agenda sin cruces, historial, "
+         "odontograma, recetas, reportes, copias, auditoría, recordatorios y suscripciones con webhook de pago.", MX + 26, 392, 380, 11, HexColor("#E1D5E7"), 16)
     T(c, "PENDIENTE PARA COBRAR", MX + 452, 382, 9, BRAND, "SB", space=1.4)
-    P(c, "<b><font color='#FFFFFF'>Antes del lanzamiento comercial:</font></b> pasarela de pagos real (hoy el plan se "
-         "activa en modo demostración), contraseñas con argon2/bcrypt, HTTPS, recuperación de clave por correo, "
-         "backups externos y constitución legal de la empresa.", MX + 452, 392, 354, 11, HexColor("#A1A1A6"), 16)
+    P(c, "<b><font color='#FFFFFF'>Antes del lanzamiento comercial:</font></b> conectar la pasarela de pagos real (el "
+         "cobro y el webhook ya funcionan con una pasarela de prueba), proveedor de WhatsApp y correo, HTTPS, "
+         "copias externas de la base y constitución legal de la empresa.", MX + 452, 392, 354, 11, HexColor("#E1D5E7"), 16)
     pie(c, n, total)
 
 
@@ -307,9 +288,9 @@ def p_cliente(c, n, total):
 
 def p_modelo(c, n, total):
     fondo(c); cabecera(c, n, "05 · Modelo de negocio", "Tres planes. Precio claro. Sin letra chica.")
-    info = [("Esencial", 59, "Para consultorios que empiezan.", ["Hasta 3 usuarios", "Hasta 150 pacientes", "Agenda, historial y odontograma", "Recetas en PDF"]),
-            ("Profesional", 129, "El favorito de los consultorios en crecimiento.", ["Hasta 10 usuarios", "Hasta 1,500 pacientes", "Reportes PDF y Excel", "Copias de seguridad"]),
-            ("Clínica", 249, "Sin límites para equipos grandes.", ["Usuarios y pacientes ilimitados", "Todo lo de Profesional", "Soporte prioritario"])]
+    info = [("Esencial", 49, "Para consultorios que empiezan.", ["Hasta 3 usuarios", "Hasta 150 pacientes", "Agenda, historial y odontograma", "Recetas en PDF"]),
+            ("Profesional", 99, "El favorito de los consultorios en crecimiento.", ["Hasta 10 usuarios", "Hasta 1,500 pacientes", "Reportes PDF y Excel", "Copias de seguridad"]),
+            ("Clínica", 189, "Sin límites para equipos grandes.", ["Usuarios y pacientes ilimitados", "Todo lo de Profesional", "Soporte prioritario"])]
     w, x = 264, MX
     for i, (nom, pr, d, fs) in enumerate(info):
         dest = nom == "Profesional"
@@ -353,7 +334,7 @@ def p_objetivos(c, n, total):
             h = P(c, it, x + 40, yy, w - 62, 11.5, INK2, 16); yy += h + 14
         x += w + 20
     card(c, MX, 420, 832, 62, fill=INK, stroke=None)
-    T(c, "Meta del año", MX + 26, 456, 11, HexColor("#A1A1A6"), "SB")
+    T(c, "Meta del año", MX + 26, 456, 11, HexColor("#E1D5E7"), "SB")
     T(c, f"≈ {CLI12:.0f} clínicas", MX + 150, 458, 22, HexColor("#FFFFFF"), "SB")
     T(c, f"{s(MRR12)} MRR", MX + 360, 458, 22, HexColor("#FFFFFF"), "SB")
     T(c, f"{s(MRR12 * 12)} ARR", MX + 570, 458, 22, BRAND, "SB")
@@ -365,7 +346,7 @@ def p_competencia(c, n, total):
     cab = ["Alternativa", "Qué ofrece (fuente pública)", "Brecha probable (hipótesis)", "Nuestra respuesta"]
     xs, ws = [MX, MX + 150, MX + 372, MX + 620], [140, 212, 238, 212]
     filas = [("Dentalink", "Nube, sin permanencia; agenda, historia clínica, odontograma, presupuestos y pagos.",
-              "Suite amplia; precios no visibles en la fuente consultada.", "Precio público desde S/ 59 y alta en minutos."),
+              "Suite amplia; precios no visibles en la fuente consultada.", "Precio público desde S/ 49 y alta en minutos."),
              ("Dentidesk", "Software dental en la nube, operando desde 2013.", "Mayor trayectoria y base instalada.",
               "Interfaz moderna y onboarding autoservicio."),
              ("Medesk / Clinic Cloud", "Plataformas multi-especialidad; Clinic Cloud desde 27 €/mes (comparador).",
@@ -398,7 +379,7 @@ def p_plazos(c, n, total):
     gx, gw = MX, 832; mw = gw / 12
     for i, m in enumerate(MESES):
         T(c, m, gx + i * mw + mw / 2, 160, 8.5, MUTED, anchor="c")
-    fases = [(0, 2, "1  Fundamentos", BRAND), (2, 4, "2  Piloto", HexColor("#17A6BC")), (4, 7, "3  Lanzamiento", HexColor("#2C9BDB")), (7, 12, "4  Escala", BRAND2)]
+    fases = [(0, 2, "1  Fundamentos", BRAND), (2, 4, "2  Piloto", HexColor("#4A2E80")), (4, 7, "3  Lanzamiento", HexColor("#6A3FB0")), (7, 12, "4  Escala", HexColor("#9575CD"))]
     for a, b, t, col in fases:
         c.setFillColor(col); c.roundRect(gx + a * mw + 1.5, H - 198, (b - a) * mw - 3, 24, 8, stroke=0, fill=1)
         T(c, t, gx + a * mw + 12, 191, 10.5, HexColor("#FFFFFF"), "SB")
@@ -406,7 +387,7 @@ def p_plazos(c, n, total):
         x = gx + mm * mw
         c.setFillColor(INK); c.circle(x - 1, H - 222, 9, stroke=0, fill=1)
         T(c, lab, x - 1, 226, 8, HexColor("#FFFFFF"), "SB", "c")
-    cont = [("Nov – Dic 2026", ["Pasarela de pagos (pruebas y producción)", "Contraseñas con argon2/bcrypt", "HTTPS, correo y recuperación de clave",
+    cont = [("Nov – Dic 2026", ["Pasarela de pagos real (Culqi, Niubiz o Mercado Pago)", "Proveedor de WhatsApp y correo", "HTTPS y monitoreo",
                                "Términos, privacidad y registro de datos (Ley 29733)", "Backups externos diarios"]),
             ("Ene – Feb 2027", ["10 consultorios con onboarding asistido", "Llamada semanal y medición de NPS", "Pulir agenda y odontograma", "Probar precios con cobro real"]),
             ("Mar – May 2027", ["Apertura pública con cobro", "Contenido, demos y referidos de pilotos", "Recordatorios por WhatsApp y correo", "Importación de pacientes desde Excel"]),
@@ -513,7 +494,7 @@ def p_riesgos(c, n, total):
     cab = ["Riesgo", "Prob.", "Impacto", "Mitigación"]
     xs, ws = [MX, MX + 270, MX + 330, MX + 405], [260, 56, 70, 427]
     filas = [("Datos de salud: obligaciones de la Ley 29733", "Media", "Alto", "Registro del banco de datos, consentimiento, cifrado y contratos con la clínica."),
-             ("Seguridad: contraseñas heredadas con SHA-256 sin sal", "Alta", "Alto", "Migrar a argon2/bcrypt y activar HTTPS antes de cualquier cobro (Fase 1)."),
+             ("Seguridad: datos clínicos en una base compartida", "Media", "Alto", "RLS por clínica, argon2id, bloqueo por intentos y auditoría inmutable (hechos); HTTPS y prueba de penetración antes de cobrar."),
              ("Adopción lenta por inercia de papel y Excel", "Alta", "Medio", "Piloto con onboarding asistido, prueba de 14 días e importación de pacientes."),
              ("Competidores establecidos con más funciones", "Media", "Medio", "No competir en suites completas: simplicidad, precio visible y soporte cercano."),
              ("Dependencia de un equipo muy pequeño", "Media", "Alto", "Documentación, pruebas automáticas y un desarrollador de respaldo."),
@@ -551,7 +532,7 @@ def p_cierre(c, n, total):
     for i, (t, d) in enumerate(pasos):
         grad_rect(c, MX, top, 30, 30, 15)
         T(c, str(i + 1), MX + 15, top + 20, 13, HexColor("#FFFFFF"), "SB", "c")
-        T(c, t, MX + 50, top + 14, 15, HexColor("#FFFFFF"), "SB"); T(c, d, MX + 50, top + 32, 11, HexColor("#A1A1A6"))
+        T(c, t, MX + 50, top + 14, 15, HexColor("#FFFFFF"), "SB"); T(c, d, MX + 50, top + 32, 11, HexColor("#E1D5E7"))
         top += 52
     T(c, "Dental Home  ·  Brief corporativo  ·  Octubre 2026  ·  Confidencial", MX, 510, 8.5, HexColor("#6E6E73"))
 

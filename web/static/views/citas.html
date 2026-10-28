@@ -1,6 +1,6 @@
 <div x-data="citasView">
   <div class="page-head">
-    <div><h1 x-text="$store.app.is('Doctor') ? 'Mi agenda' : 'Agenda'"></h1><p x-text="resumen"></p></div>
+    <div><div class="kicker">Agenda</div><h1 style="margin-top:8px" x-text="soyDoctor ? 'Mi agenda' : 'Agenda del consultorio'"></h1><p x-text="resumen"></p></div>
     <button class="btn primary" @click="nueva()"><svg class="i"><use href="#i-plus"/></svg>Nueva cita</button>
   </div>
 
@@ -12,29 +12,33 @@
     </div>
     <button class="btn sm" @click="hoy()">Hoy</button>
     <div class="grow"></div>
-    <select class="input" style="width:auto;height:36px" x-show="!$store.app.is('Doctor')" x-model="doctor" @change="cargar()">
+    <select class="input" style="width:auto;height:40px;border-radius:999px" x-show="!soyDoctor" x-model="doctor" @change="cargar()">
       <option value="">Todos los doctores</option>
-      <template x-for="d in doctores" :key="d.id"><option :value="d.id" x-text="'Dr. ' + d.usuario"></option></template>
+      <template x-for="d in doctores" :key="d.id"><option :value="d.id" x-text="'Dr(a). ' + d.usuario"></option></template>
     </select>
     <div class="seg"><template x-for="p in ['dia','semana','mes']" :key="p"><button :class="{ on: periodo === p }" @click="periodo = p; cargar()" x-text="fmt.cap(p === 'dia' ? 'día' : p)"></button></template></div>
   </div>
 
-  <template x-if="cargando && !citas.length"><div class="card" style="display:grid;gap:12px"><template x-for="n in 4"><div class="skel" style="height:48px"></div></template></div></template>
+  <template x-if="cargando && !citas.length"><div class="card" style="display:grid;gap:12px"><template x-for="n in 4"><div class="skel" style="height:52px"></div></template></div></template>
 
   <!-- DÍA -->
   <template x-if="periodo === 'dia' && !(cargando && !citas.length)">
-    <div class="card" style="padding:14px">
-      <template x-if="!citas.length"><div class="empty"><svg class="art" viewBox="0 0 96 96" fill="none"><circle cx="48" cy="48" r="40" fill="var(--brand-soft)"/><rect x="26" y="30" width="44" height="40" rx="8" fill="#fff" stroke="var(--brand)" stroke-width="2.2"/><path d="M26 44h44M38 24v10M58 24v10" stroke="var(--brand)" stroke-width="2.2" stroke-linecap="round"/></svg><h3>Sin citas este día</h3><p>Un buen momento para ponerse al día.</p><button class="btn primary sm" @click="nueva()">Agendar cita</button></div></template>
+    <div class="card" style="padding:16px">
+      <template x-if="!citas.length"><div class="empty"><svg class="art float1" viewBox="0 0 120 100" fill="none"><rect x="18" y="16" width="84" height="70" rx="18" fill="var(--surface-2)"/><path d="M18 38h84M42 10v14M78 10v14" stroke="var(--brand-2)" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="60" r="7" fill="var(--brand)"/></svg>
+        <h3>Sin citas este día</h3><p>Un buen momento para ponerse al día.</p><button class="btn primary sm" @click="nueva()">Agendar cita</button></div></template>
       <div class="timeline stagger">
         <template x-for="(c, i) in citas" :key="c.id">
-          <div class="tl-item" :class="{ done: c.estado !== 'Pendiente' }" :style="'--i:' + Math.min(i, 12) + ';grid-template-columns:58px 1fr auto'">
-            <span class="t num" x-text="c.hora"></span>
-            <div class="who"><strong x-text="c.paciente"></strong><span><span x-text="'Dr. ' + c.doctor"></span><span x-show="c.estado === 'Cancelada' && c.motivoCancelacion" x-text="' · ' + c.motivoCancelacion"></span></span></div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span class="badge" :class="{ ok: c.estado === 'Completada', warn: c.estado === 'Pendiente', bad: c.estado === 'Cancelada' }" x-text="c.estado"></span>
-              <template x-if="c.estado === 'Pendiente'"><span style="display:flex;gap:2px">
-                <a class="btn sm primary" x-show="$store.app.is('Doctor','Administrador')" :href="'#/historial/' + c.pacienteId + '?cita=' + c.id">Atender</a>
-                <button class="btn ghost icon sm" title="Marcar completada" :id="'ok' + c.id" @click="completar(c)"><svg class="i"><use href="#i-check"/></svg></button>
+          <div class="tl-item" :class="{ done: c.estado === 'completada', cancel: c.estado === 'cancelada' }" :style="'--i:' + Math.min(i, 12)">
+            <span class="t num"><span x-text="c.hora"></span><small x-text="c.horaFin"></small></span>
+            <span class="rail"></span>
+            <div class="who"><strong x-text="c.paciente"></strong>
+              <span><span x-text="'Dr(a). ' + c.doctor + ' · ' + c.minutos + ' min'"></span><span x-show="c.estado === 'cancelada' && c.motivoCancelacion" x-text="' · ' + c.motivoCancelacion"></span></span></div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+              <template x-if="enCurso(c)"><span class="badge brand"><span class="dot-live" style="margin-left:-2px"></span>En curso</span></template>
+              <span x-show="!enCurso(c)" class="badge" :class="{ ok: c.estado === 'completada', warn: c.estado === 'pendiente', bad: c.estado === 'cancelada' }" x-text="fmt.estado(c.estado)"></span>
+              <a class="btn sm primary" x-show="c.estado !== 'cancelada' && !c.tieneRegistro && c.fecha <= fmt.today() && $store.app.is('doctor','administrador')" :href="'#/historial/' + c.pacienteId + '?cita=' + c.id">Atender</a>
+              <template x-if="c.estado === 'pendiente'"><span style="display:flex;gap:2px">
+                <button class="btn ghost icon sm" title="Marcar atendida" @click="completar(c)"><svg class="i"><use href="#i-check"/></svg></button>
                 <button class="btn ghost icon sm" title="Reprogramar" @click="reprogramar(c)"><svg class="i"><use href="#i-clock"/></svg></button>
                 <button class="btn ghost icon sm danger" title="Cancelar" @click="cancelar(c)"><svg class="i"><use href="#i-x"/></svg></button>
               </span></template>
@@ -60,10 +64,10 @@
 
   <!-- MES -->
   <template x-if="periodo === 'mes'">
-    <div class="month stagger" style="animation:fadeUp .5s var(--ease) both">
+    <div class="month">
       <template x-for="n in ['lun','mar','mié','jue','vie','sáb','dom']"><div class="dow" x-text="n"></div></template>
       <template x-for="c in celdasMes" :key="c.f">
-        <button class="cell" :class="{ off: !c.dentro, today: c.f === fmt.today() }" @click="irDia(c.f)">
+        <button class="mcell" :class="{ off: !c.dentro, today: c.f === fmt.today() }" @click="irDia(c.f)">
           <b class="num" x-text="fmt.parse(c.f).getDate()"></b>
           <i x-show="porDia(c.f).length" x-text="porDia(c.f).length + (porDia(c.f).length === 1 ? ' cita' : ' citas')"></i>
         </button>
@@ -75,21 +79,23 @@
   <template x-if="form">
     <div class="overlay" @click.self="form = null" @keydown.escape.window="form = null">
       <form class="modal wide" @submit.prevent="guardar">
-        <h2>Nueva cita</h2><p class="sub">Elige paciente, doctor y un horario libre.</p>
+        <div class="kicker">Nueva cita</div><h2 style="margin-top:6px">Agendar</h2><p class="sub">Elige paciente, doctor, duración y un horario libre.</p>
         <div class="form">
           <div class="field"><label>Paciente</label>
-            <template x-if="form.paciente"><div class="card" style="padding:10px 14px;display:flex;align-items:center;gap:12px"><div class="avatar sm" x-text="fmt.initials(form.paciente.nombreCompleto)"></div><div style="flex:1"><b x-text="form.paciente.nombreCompleto"></b><div class="muted" style="font-size:13px" x-text="'DNI ' + form.paciente.dni"></div></div><button type="button" class="btn ghost sm" @click="form.paciente = null; form.q = ''">Cambiar</button></div></template>
-            <template x-if="!form.paciente"><div><input class="input" placeholder="Buscar por nombre o DNI" x-model="form.q" @input.debounce.200ms="buscarPaciente()" x-init="$nextTick(() => $el.focus())">
-              <div class="picker" x-show="form.res.length"><template x-for="p in form.res" :key="p.id"><button type="button" @click="form.paciente = p"><div class="avatar sm" x-text="fmt.initials(p.nombreCompleto)"></div><span x-text="p.nombreCompleto"></span><span class="muted num" style="margin-left:auto" x-text="p.dni"></span></button></template></div></div></template>
+            <template x-if="form.paciente"><div class="card soft" style="padding:10px 14px;display:flex;align-items:center;gap:12px"><div class="avatar sm" x-text="fmt.initials(form.paciente.nombreCompleto)"></div><div style="flex:1"><b x-text="form.paciente.nombreCompleto"></b><div class="muted" style="font-size:13px" x-text="form.paciente.tipoDocumento + ' ' + form.paciente.numeroDocumento"></div></div><button type="button" class="btn ghost sm" @click="form.paciente = null; form.q = ''">Cambiar</button></div></template>
+            <template x-if="!form.paciente"><div><input class="input" placeholder="Buscar por nombre o documento" x-model="form.q" @input.debounce.200ms="buscarPaciente()" x-init="$nextTick(() => $el.focus())">
+              <div class="picker" x-show="form.res.length"><template x-for="p in form.res" :key="p.id"><button type="button" @click="form.paciente = p"><div class="avatar sm" x-text="fmt.initials(p.nombreCompleto)"></div><span x-text="p.nombreCompleto"></span><span class="muted num" style="margin-left:auto" x-text="p.numeroDocumento"></span></button></template></div></div></template>
           </div>
-          <div class="grid-2">
-            <div class="field" x-show="!$store.app.is('Doctor')"><label>Doctor</label>
-              <select class="input" x-model="form.doctorId" @change="libres()" required><option value="">Seleccionar</option><template x-for="d in doctores" :key="d.id"><option :value="d.id" x-text="'Dr. ' + d.usuario"></option></template></select></div>
-            <div class="field"><label>Fecha</label><input type="date" class="input" x-model="form.fecha" @change="libres()" required></div>
+          <div class="grid-3">
+            <div class="field" x-show="!soyDoctor"><label>Doctor</label>
+              <select class="input" x-model="form.doctorId" @change="libres()" :required="!soyDoctor"><option value="">Seleccionar</option><template x-for="d in doctores" :key="d.id"><option :value="d.id" x-text="'Dr(a). ' + d.usuario"></option></template></select></div>
+            <div class="field"><label>Fecha</label><input type="date" class="input" x-model="form.fecha" :min="fmt.today()" @change="libres()" required></div>
+            <div class="field"><label>Duración</label><select class="input" x-model="form.minutos" @change="libres()"><template x-for="m in DURACIONES" :key="m"><option :value="m" :selected="m == form.minutos" x-text="m + ' min'"></option></template></select></div>
           </div>
           <div class="field"><label>Horario</label>
-            <div class="slots"><template x-for="h in HORAS" :key="h"><button type="button" class="slot num" :class="{ on: form.hora === h }" :disabled="ocupadas.includes(h)" @click="form.hora = h" x-text="h"></button></template></div>
-            <span class="hint" x-show="!form.doctorId && !$store.app.is('Doctor')">Elige un doctor para ver su disponibilidad.</span>
+            <div class="slots"><template x-for="h in HORAS" :key="h"><button type="button" class="slot num" :class="{ on: form.hora === h }" :disabled="!libre(h, form.fecha, form.minutos)" @click="form.hora = h" x-text="h"></button></template></div>
+            <span class="hint" x-show="!form.doctorId && !soyDoctor">Elige un doctor para ver su disponibilidad.</span>
+            <span class="hint" x-show="form.hora" x-text="'De ' + form.hora + ' a ' + fmt.hhmm(fmt.min(form.hora) + Number(form.minutos))"></span>
           </div>
           <div class="error-text" x-show="error" x-text="error"></div>
           <div class="actions"><button type="button" class="btn" @click="form = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }" :disabled="!form.paciente || !form.hora">Agendar cita</button></div>
@@ -102,10 +108,13 @@
   <template x-if="rep">
     <div class="overlay" @click.self="rep = null" @keydown.escape.window="rep = null">
       <form class="modal wide" @submit.prevent="guardarRep">
-        <h2>Reprogramar cita</h2><p class="sub" x-text="rep.c.paciente + ' · Dr. ' + rep.c.doctor"></p>
+        <div class="kicker">Reprogramar</div><h2 style="margin-top:6px" x-text="rep.c.paciente"></h2><p class="sub" x-text="'Dr(a). ' + rep.c.doctor + ' · antes ' + fmt.short(rep.c.fecha) + ' ' + rep.c.hora"></p>
         <div class="form">
-          <div class="field"><label>Nueva fecha</label><input type="date" class="input" x-model="rep.fecha" @change="libresRep()" required></div>
-          <div class="field"><label>Horario</label><div class="slots"><template x-for="h in HORAS" :key="h"><button type="button" class="slot num" :class="{ on: rep.hora === h }" :disabled="ocupadas.includes(h)" @click="rep.hora = h" x-text="h"></button></template></div></div>
+          <div class="grid-2">
+            <div class="field"><label>Nueva fecha</label><input type="date" class="input" x-model="rep.fecha" :min="fmt.today()" @change="libresRep()" required></div>
+            <div class="field"><label>Duración</label><select class="input" x-model="rep.minutos" @change="libresRep()"><template x-for="m in DURACIONES" :key="m"><option :value="m" :selected="m == rep.minutos" x-text="m + ' min'"></option></template></select></div>
+          </div>
+          <div class="field"><label>Horario</label><div class="slots"><template x-for="h in HORAS" :key="h"><button type="button" class="slot num" :class="{ on: rep.hora === h }" :disabled="!libre(h, rep.fecha, rep.minutos)" @click="rep.hora = h" x-text="h"></button></template></div></div>
           <div class="error-text" x-show="error" x-text="error"></div>
           <div class="actions"><button type="button" class="btn" @click="rep = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }" :disabled="!rep.hora">Reprogramar</button></div>
         </div>
@@ -117,11 +126,11 @@
   <template x-if="canc">
     <div class="overlay" @click.self="canc = null" @keydown.escape.window="canc = null">
       <form class="modal" @submit.prevent="guardarCanc">
-        <h2>Cancelar cita</h2><p class="sub" x-text="canc.c.paciente + ' · ' + fmt.long(canc.c.fecha) + ' ' + canc.c.hora"></p>
+        <div class="kicker">Cancelar cita</div><h2 style="margin-top:6px" x-text="canc.c.paciente"></h2><p class="sub" x-text="fmt.cap(fmt.long(canc.c.fecha)) + ' · ' + canc.c.hora"></p>
         <div class="form">
-          <div class="field"><label>Motivo de la cancelación</label><textarea class="input" x-model="canc.motivo" minlength="5" required placeholder="Mínimo 5 caracteres" x-init="$nextTick(() => $el.focus())"></textarea></div>
+          <div class="field"><label>Motivo de la cancelación</label><textarea class="input" x-model="canc.motivo" minlength="5" maxlength="300" required placeholder="Mínimo 5 caracteres" x-init="$nextTick(() => $el.focus())"></textarea></div>
           <div class="error-text" x-show="error" x-text="error"></div>
-          <div class="actions"><button type="button" class="btn" @click="canc = null">Volver</button><button class="btn primary" style="background:var(--bad);box-shadow:none" :class="{ 'is-busy': busy }">Cancelar cita</button></div>
+          <div class="actions"><button type="button" class="btn" @click="canc = null">Volver</button><button class="btn danger-fill" :class="{ 'is-busy': busy }">Cancelar cita</button></div>
         </div>
       </form>
     </div>
