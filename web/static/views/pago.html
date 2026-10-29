@@ -1,0 +1,32 @@
+<div x-data="pagoView" style="min-height:100vh;background:var(--bg);padding:20px">
+  <div class="checkout in1">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px"><span class="badge warn plain">Pasarela de prueba · no se realiza ningún cobro</span></div>
+    <div class="card" style="padding:32px;border-radius:30px;box-shadow:var(--shadow-lg)">
+      <template x-if="!c && !error"><div class="skel" style="height:180px"></div></template>
+      <template x-if="error && !c"><div class="form"><div class="error-text" x-text="error"></div><a class="btn" href="#/suscripcion">Volver</a></div></template>
+      <template x-if="c">
+        <div class="form">
+          <div style="display:flex;align-items:center;gap:12px"><span class="tile deep"><svg class="i"><use href="#i-card"/></svg></span><div><div class="kicker">Pago de suscripción</div><b x-text="c.clinica"></b></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+            <span class="muted" x-text="'Plan ' + c.plan + ' · 1 mes'"></span><span style="font-size:34px;font-weight:800;letter-spacing:-.03em" x-text="fmt.soles(c.monto)"></span></div>
+          <template x-if="c.estado === 'pendiente' && !resultado">
+            <div class="form">
+              <div class="field"><label>Tarjeta de prueba</label><input class="input num" value="4111 1111 1111 1111" readonly></div>
+              <div class="error-text" x-show="error" x-text="error"></div>
+              <button class="btn primary lg" :class="{ 'is-busy': busy }" @click="pagar('aprobado')" x-text="'Pagar ' + fmt.soles(c.monto)"></button>
+              <button class="btn ghost" :disabled="busy" @click="pagar('rechazado')">Simular pago rechazado</button>
+            </div>
+          </template>
+          <template x-if="resultado === 'pagado' || (c.estado === 'pagado' && !resultado)">
+            <div class="form" style="text-align:center;justify-items:center"><span class="tile" style="width:64px;height:64px;border-radius:22px;background:var(--ok-soft);color:var(--ok)"><svg class="i lg"><use href="#i-check"/></svg></span>
+              <h2>Pago aprobado</h2><p class="muted">Tu plan quedó activo. Recibimos la confirmación por webhook.</p><a class="btn primary" href="#/suscripcion">Volver a Dental Home</a></div>
+          </template>
+          <template x-if="resultado === 'fallido' || c.estado === 'fallido'">
+            <div class="form" style="text-align:center;justify-items:center"><span class="tile" style="width:64px;height:64px;border-radius:22px;background:var(--bad-soft);color:var(--bad)"><svg class="i lg"><use href="#i-x"/></svg></span>
+              <h2>Pago rechazado</h2><p class="muted">No se realizó ningún cambio en tu plan.</p><a class="btn" href="#/suscripcion">Volver e intentar de nuevo</a></div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

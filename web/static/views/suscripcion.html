@@ -1,36 +1,52 @@
 <div x-data="suscripcionView">
-  <div class="page-head"><div><h1>Suscripción</h1><p>Gestiona tu plan y revisa el uso de tu consultorio.</p></div></div>
-
-  <div class="card" style="margin-bottom:22px">
-    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
-      <div style="flex:1;min-width:240px">
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><h3 style="font-size:20px" x-text="'Plan ' + sub.plan.nombre"></h3>
-          <span class="badge" :class="{ ok: sub.estado === 'activa', warn: sub.estado === 'prueba', bad: sub.estado === 'vencida' || sub.estado === 'cancelada' }" x-text="{ prueba: 'En prueba', activa: 'Activa', vencida: 'Vencida', cancelada: 'Cancelada' }[sub.estado]"></span></div>
-        <p class="muted" x-text="sub.estado === 'prueba' ? 'Te quedan ' + sub.dias_restantes + ' días de prueba (hasta el ' + fmt.short(sub.vence) + ').' : sub.estado === 'activa' ? 'Vigente hasta el ' + fmt.short(sub.vence) + '.' : 'Elige un plan para volver a registrar cambios.'"></p>
+  <div class="page-head"><div><div class="kicker">Cuenta</div><h1 style="margin-top:8px">Suscripción</h1><p>Tu plan, el uso de tu consultorio y tus pagos.</p></div></div>
+  <template x-if="!d"><div class="skel" style="height:160px"></div></template>
+  <template x-if="d">
+    <div>
+      <div class="card" style="margin-bottom:24px">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+          <div style="flex:1;min-width:240px">
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><h3 style="font-size:21px" x-text="sub.plan ? 'Plan ' + sub.plan.nombre : 'Sin plan'"></h3>
+              <span class="badge" :class="{ ok: sub.estado === 'activa', brand: sub.estado === 'prueba', bad: !sub.vigente }" x-text="fmt.estadoSub(sub)"></span></div>
+            <p class="muted" x-text="sub.estado === 'prueba' ? 'Te quedan ' + sub.dias_restantes + ' días de prueba (hasta el ' + fmt.short(sub.vence) + ').' : sub.vigente ? 'Vigente hasta el ' + fmt.short(sub.vence) + '.' : 'Elige un plan para volver a registrar cambios. Tus datos siguen disponibles para consulta.'"></p>
+          </div>
+          <div style="display:grid;gap:14px;min-width:260px;flex:1">
+            <div><div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:6px"><span>Usuarios activos</span><b class="num" x-text="d.uso.usuarios + ' / ' + (sub.plan?.max_usuarios || '∞')"></b></div><div class="meter" :class="{ hot: pct('usuarios') > 85 }"><i :style="'--w:' + pct('usuarios') + '%'"></i></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:6px"><span>Pacientes activos</span><b class="num" x-text="d.uso.pacientes.toLocaleString('es-PE') + ' / ' + (sub.plan?.max_pacientes ? sub.plan.max_pacientes.toLocaleString('es-PE') : '∞')"></b></div><div class="meter" :class="{ hot: pct('pacientes') > 85 }"><i :style="'--w:' + pct('pacientes') + '%'"></i></div></div>
+          </div>
+        </div>
       </div>
-      <div style="display:grid;gap:14px;min-width:260px;flex:1">
-        <div><div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px"><span>Usuarios</span><b class="num" x-text="uso.usuarios + ' / ' + (sub.plan.max_usuarios || '∞')"></b></div><div class="meter" :class="{ hot: pct('usuarios') > 85 }"><i :style="'--w:' + pct('usuarios') + '%'"></i></div></div>
-        <div><div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px"><span>Pacientes</span><b class="num" x-text="uso.pacientes.toLocaleString('es-PE') + ' / ' + (sub.plan.max_pacientes ? sub.plan.max_pacientes.toLocaleString('es-PE') : '∞')"></b></div><div class="meter" :class="{ hot: pct('pacientes') > 85 }"><i :style="'--w:' + pct('pacientes') + '%'"></i></div></div>
+
+      <div class="plans stagger">
+        <template x-for="(p, i) in d.planes" :key="p.id">
+          <article class="plan" :class="{ hot: p.codigo === 'profesional' }" :style="'--i:' + i">
+            <span class="tag" x-show="p.codigo === 'profesional'">Más elegido</span>
+            <div><h3 x-text="p.nombre" style="font-size:22px"></h3><p class="muted" style="margin-top:4px" x-text="p.max_usuarios ? 'Hasta ' + p.max_usuarios + ' usuarios' : 'Usuarios ilimitados'"></p></div>
+            <div class="price"><span x-text="fmt.soles(p.precio)"></span> <small>/ mes</small></div>
+            <ul>
+              <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.max_pacientes ? 'Hasta ' + p.max_pacientes.toLocaleString('es-PE') + ' pacientes activos' : 'Pacientes ilimitados'"></span></li>
+              <li><svg class="i"><use href="#i-check"/></svg><span>Agenda, historia clínica, odontograma y recetas</span></li>
+              <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.permite_excel ? 'Reportes en PDF y Excel' : 'Reportes en PDF'"></span></li>
+              <li><svg class="i" :style="p.permite_respaldos ? '' : 'opacity:.35'"><use :href="p.permite_respaldos ? '#i-check' : '#i-x'"/></svg><span :style="p.permite_respaldos ? '' : 'opacity:.55'">Copias de seguridad</span></li>
+            </ul>
+            <button class="btn lg" :class="{ primary: p.codigo !== 'profesional' }" :disabled="busy" @click="pagar(p)" x-text="actual(p) ? 'Renovar 1 mes' : (sub.estado === 'activa' ? 'Cambiar a ' + p.nombre : 'Elegir ' + p.nombre)"></button>
+          </article>
+        </template>
+      </div>
+
+      <div class="cols" style="margin-top:24px;grid-template-columns:1fr 1fr">
+        <div class="card"><div class="card-head"><h3>Pagos</h3></div>
+          <p class="muted" x-show="!d.pagos.length">Aún no hay pagos.</p>
+          <template x-for="p in d.pagos" :key="p.id"><div class="file-row"><span class="tile"><svg class="i"><use href="#i-card"/></svg></span>
+            <div class="grow"><b x-text="p.plan + ' · ' + fmt.soles(p.monto)"></b><div class="muted" style="font-size:13px" x-text="p.cuando + (p.periodo[0] ? ' · ' + fmt.short(p.periodo[0]) + ' → ' + fmt.short(p.periodo[1]) : '')"></div></div>
+            <span class="badge" :class="{ ok: p.estado === 'pagado', warn: p.estado === 'pendiente', bad: p.estado === 'fallido' }" x-text="fmt.cap(p.estado)"></span></div></template>
+        </div>
+        <div class="card"><div class="card-head"><h3>Historial de periodos</h3></div>
+          <template x-for="h in d.historial" :key="h.id"><div class="file-row"><span class="tile outline"><svg class="i"><use href="#i-calendar"/></svg></span>
+            <div class="grow"><b x-text="h.plan"></b><div class="muted" style="font-size:13px" x-text="fmt.short(h.inicio) + ' → ' + fmt.short(h.vence)"></div></div>
+            <span class="badge plain" :class="{ ok: h.estado === 'activa', brand: h.estado === 'prueba' }" x-text="h.estado === 'cancelada' ? 'Cerrado' : fmt.cap(h.estado)"></span></div></template>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div class="plans stagger">
-    <template x-for="(p, i) in planes" :key="p.id">
-      <article class="card plan" :class="{ hot: p.destacado }" :style="'--i:' + i">
-        <span class="tag" x-show="p.destacado">Más elegido</span>
-        <div><h3 x-text="p.nombre" style="font-size:19px"></h3><p class="muted" x-text="p.descripcion" style="margin-top:4px"></p></div>
-        <div class="price">S/ <span x-text="p.precio"></span> <small>/ mes</small></div>
-        <ul>
-          <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.max_usuarios ? 'Hasta ' + p.max_usuarios + ' usuarios' : 'Usuarios ilimitados'"></span></li>
-          <li><svg class="i"><use href="#i-check"/></svg><span x-text="p.max_pacientes ? 'Hasta ' + p.max_pacientes.toLocaleString('es-PE') + ' pacientes' : 'Pacientes ilimitados'"></span></li>
-          <template x-for="e in p.extras" :key="e"><li><svg class="i"><use href="#i-check"/></svg><span x-text="e"></span></li></template>
-        </ul>
-        <button class="btn lg" :class="{ primary: p.destacado }" :disabled="actual(p)" @click="elegir(p)" x-text="actual(p) ? 'Tu plan actual' : (sub.estado === 'activa' ? 'Cambiar a ' + p.nombre : 'Activar ' + p.nombre)"></button>
-      </article>
-    </template>
-  </div>
-
-  <p class="hint" style="margin-top:18px;text-align:center">Modo demostración: la activación del plan no genera cobros reales.</p>
-  <div style="text-align:center;margin-top:10px" x-show="sub.estado === 'activa' || sub.estado === 'prueba'"><button class="btn ghost sm danger" @click="cancelar()">Cancelar suscripción</button></div>
+  </template>
 </div>

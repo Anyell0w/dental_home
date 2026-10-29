@@ -1,0 +1,25 @@
+# Desarrollo local: PostgreSQL 16 + API.  docker compose up  ->  http://localhost:8000
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 20
+  web:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_ADMIN_URL: postgresql://postgres:postgres@db:5432/postgres
+      DATABASE_URL: postgresql://dental_api:${DENTAL_API_PASSWORD:-dental_api}@db:5432/dental_home
+      DENTAL_API_PASSWORD: ${DENTAL_API_PASSWORD:-dental_api}
+      DENTAL_TZ: America/Lima
+    ports: ["8000:8000"]
+    volumes: [data:/data]
+volumes:
+  pgdata:
+  data:

@@ -1,0 +1,80 @@
+<div x-data="plataformaView" style="min-height:100vh;background:var(--bg)">
+  <template x-if="cargado && !admin">
+    <div class="auth" style="grid-template-columns:1fr">
+      <div class="auth-form"><form class="inner in1" @submit.prevent="login">
+        <a class="marca" href="#/" style="padding:0"><span class="logo"></span><span class="word">DENTAL HOME</span></a>
+        <div><div class="kicker">Consola de plataforma</div><h1 style="margin-top:8px">Administración</h1><p class="muted" style="margin-top:8px">Acceso exclusivo del equipo de Dental Home.</p></div>
+        <div class="field"><label>Correo</label><input type="email" class="input" x-model="f.correo" required autocomplete="username"></div>
+        <div class="field"><label>Contraseña</label><input type="password" class="input" x-model="f.password" required autocomplete="current-password"></div>
+        <div class="error-text" x-show="error" x-text="error"></div>
+        <button class="btn primary lg" :class="{ 'is-busy': busy }">Entrar</button>
+      </form></div>
+    </div>
+  </template>
+
+  <template x-if="admin && d">
+    <div class="page" style="max-width:1280px">
+      <div class="page-head">
+        <div style="display:flex;align-items:center;gap:14px"><span class="marca" style="padding:0"><span class="logo"></span></span>
+          <div><div class="kicker">Consola de plataforma</div><h1 style="margin-top:6px">Clínicas y planes</h1><p x-text="d.admin"></p></div></div>
+        <div style="display:flex;gap:8px"><button class="btn ghost icon" @click="$store.app.toggleTheme()"><svg class="i"><use :href="$store.app.theme === 'dark' ? '#i-sun' : '#i-moon'"/></svg></button><button class="btn" @click="salir()"><svg class="i"><use href="#i-logout"/></svg>Salir</button></div>
+      </div>
+
+      <div class="grid-stats stagger">
+        <div class="card stat hover" style="--i:0"><span class="tile deep"><svg class="i"><use href="#i-building"/></svg></span><span class="k">Clínicas</span><span class="v num" x-count="d.clinicas.length">0</span></div>
+        <div class="card stat hover" style="--i:1"><span class="tile accent"><svg class="i"><use href="#i-check"/></svg></span><span class="k">De pago activas</span><span class="v num" x-count="cuenta('activa')">0</span></div>
+        <div class="card stat hover" style="--i:2"><span class="tile outline"><svg class="i"><use href="#i-spark"/></svg></span><span class="k">En prueba</span><span class="v num" x-count="cuenta('prueba')">0</span></div>
+        <div class="card stat hover" style="--i:3"><span class="tile"><svg class="i"><use href="#i-card"/></svg></span><span class="k">Ingreso mensual (MRR)</span><span class="v num" x-text="fmt.soles(d.mrr)"></span></div>
+      </div>
+
+      <div class="card" style="padding:16px 10px;margin-bottom:16px">
+        <div class="card-head" style="padding:0 14px"><h3>Clínicas</h3></div>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>Clínica</th><th>Plan</th><th>Estado</th><th class="hide-m">Vence</th><th class="hide-m">Usuarios</th><th></th></tr></thead>
+          <tbody><template x-for="(c, i) in d.clinicas" :key="c.id"><tr :style="'--i:' + Math.min(i, 14) + (c.activa ? '' : ';opacity:.55')">
+            <td><div class="cell-user"><div class="avatar sm" x-text="fmt.initials(c.nombre)"></div><div><strong x-text="c.nombre"></strong><span x-text="c.codigo + ' · ' + c.correo"></span></div></div></td>
+            <td x-text="c.plan || '—'"></td>
+            <td><span class="badge" :class="{ ok: c.estado === 'activa', brand: c.estado === 'prueba', bad: c.estado === 'vencida' || c.estado === 'sin_plan' || !c.activa }" x-text="!c.activa ? 'Suspendida' : fmt.cap(c.estado.replace('_', ' '))"></span></td>
+            <td class="hide-m num" x-text="fmt.short(c.vence)"></td>
+            <td class="hide-m num" x-text="c.usuarios"></td>
+            <td><div class="row-actions" style="opacity:1">
+              <button class="btn sm ghost" x-show="c.estado === 'prueba' && c.activa" @click="extender(c)">+7 días</button>
+              <button class="btn sm" :class="c.activa ? 'danger' : ''" @click="estado(c)" x-text="c.activa ? 'Suspender' : 'Reactivar'"></button></div></td>
+          </tr></template></tbody>
+        </table></div>
+      </div>
+
+      <div class="cols" style="grid-template-columns:1.2fr 1fr">
+        <div class="card"><div class="card-head"><h3>Planes</h3><span class="muted" style="font-size:13px">Los cambios aplican a nuevas renovaciones</span></div>
+          <template x-for="p in d.planes" :key="p.id"><div class="file-row"><span class="tile" :class="p.activo ? 'deep' : 'outline'"><svg class="i"><use href="#i-card"/></svg></span>
+            <div class="grow"><b x-text="p.nombre + ' · ' + fmt.soles(p.precio)"></b><div class="muted" style="font-size:13px" x-text="(p.max_usuarios || '∞') + ' usuarios · ' + (p.max_pacientes || '∞') + ' pacientes · Excel ' + (p.permite_excel ? 'sí' : 'no') + ' · Copias ' + (p.permite_respaldos ? 'sí' : 'no')"></div></div>
+            <span class="badge" x-show="!p.activo">Inactivo</span><button class="btn sm" @click="editar(p)">Editar</button></div></template>
+        </div>
+        <div class="card"><div class="card-head"><h3>Pagos recientes</h3></div>
+          <p class="muted" x-show="!d.pagos.length">Sin pagos.</p>
+          <template x-for="p in d.pagos" :key="p.id"><div class="file-row"><div class="grow"><b x-text="p.clinica"></b><div class="muted" style="font-size:13px" x-text="p.plan + ' · ' + fmt.soles(p.monto) + ' · ' + p.pasarela + ' · ' + p.cuando"></div></div>
+            <span class="badge" :class="{ ok: p.estado === 'pagado', warn: p.estado === 'pendiente', bad: p.estado === 'fallido' }" x-text="fmt.cap(p.estado)"></span></div></template>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template x-if="editando">
+    <div class="overlay" @click.self="editando = null" @keydown.escape.window="editando = null">
+      <form class="modal" @submit.prevent="guardarPlan">
+        <div class="kicker">Configurar plan</div><h2 style="margin-top:6px" x-text="editando.nombre"></h2><p class="sub">Deja un límite vacío para que sea ilimitado.</p>
+        <div class="form">
+          <div class="grid-2"><div class="field"><label>Nombre</label><input class="input" x-model="editando.nombre" required maxlength="40"></div>
+            <div class="field"><label>Precio mensual (S/)</label><input type="number" min="0" step="0.01" class="input num" x-model="editando.precio" required></div></div>
+          <div class="grid-2"><div class="field"><label>Máx. usuarios</label><input type="number" min="1" class="input num" x-model="editando.max_usuarios"></div>
+            <div class="field"><label>Máx. pacientes</label><input type="number" min="1" class="input num" x-model="editando.max_pacientes"></div></div>
+          <label class="check"><input type="checkbox" x-model="editando.permite_excel"><span>Permite reportes en Excel</span></label>
+          <label class="check"><input type="checkbox" x-model="editando.permite_respaldos"><span>Permite copias de seguridad</span></label>
+          <label class="check"><input type="checkbox" x-model="editando.activo"><span>Plan disponible para contratar</span></label>
+          <div class="error-text" x-show="error" x-text="error"></div>
+          <div class="actions"><button type="button" class="btn" @click="editando = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }">Guardar plan</button></div>
+        </div>
+      </form>
+    </div>
+  </template>
+</div>

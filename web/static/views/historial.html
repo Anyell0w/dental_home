@@ -2,11 +2,11 @@
   <!-- Selector de paciente -->
   <template x-if="!pid">
     <div>
-      <div class="page-head"><div><h1>Historial clínico</h1><p>Elige un paciente para ver sus consultas, odontograma y recetas.</p></div></div>
-      <div class="toolbar"><div style="position:relative;flex:1;max-width:420px"><svg class="i" style="position:absolute;left:14px;top:13px;color:var(--muted)"><use href="#i-search"/></svg><input class="input" style="padding-left:42px" placeholder="Buscar paciente…" x-model="q" @input.debounce.220ms="buscar()" x-init="buscar()"></div></div>
+      <div class="page-head"><div><div class="kicker">Historia clínica</div><h1 style="margin-top:8px">Historial clínico</h1><p>Elige un paciente para ver sus consultas, odontograma y recetas.</p></div></div>
+      <div class="toolbar"><div style="position:relative;flex:1;max-width:440px"><svg class="i" style="position:absolute;left:16px;top:14px;color:var(--muted)"><use href="#i-search"/></svg><input class="input" style="padding-left:44px;border-radius:999px" placeholder="Buscar paciente…" x-model="q" @input.debounce.220ms="buscar()" x-init="buscar()"></div></div>
       <div class="pat-grid stagger">
         <template x-for="(p, i) in pacientes" :key="p.id">
-          <a class="card hover pat-card" :href="'#/historial/' + p.id" :style="'--i:' + Math.min(i, 12)"><div class="avatar" x-text="fmt.initials(p.nombreCompleto)"></div><div style="min-width:0;flex:1"><b x-text="p.apellido + ', ' + p.nombre" style="display:block"></b><span class="muted num" x-text="'DNI ' + p.dni + (p.edad !== null ? ' · ' + p.edad + ' años' : '')"></span></div><svg class="i" style="color:var(--muted)"><use href="#i-right"/></svg></a>
+          <a class="card hover pat-card" :href="'#/historial/' + p.id" :style="'--i:' + Math.min(i, 12)"><div class="avatar" x-text="fmt.initials(p.nombreCompleto)"></div><div style="min-width:0;flex:1"><b x-text="p.apellidos + ', ' + p.nombres" style="display:block"></b><span class="muted num" style="font-size:13px" x-text="p.tipoDocumento + ' ' + p.numeroDocumento + (p.edad !== null ? ' · ' + p.edad + ' años' : '')"></span></div><svg class="i" style="color:var(--brand-2)"><use href="#i-right"/></svg></a>
         </template>
       </div>
       <div class="empty" x-show="!pacientes.length && !cargando"><h3>Sin resultados</h3><p>No encontramos pacientes con ese criterio.</p></div>
@@ -17,55 +17,81 @@
   <template x-if="pid && det">
     <div>
       <a class="btn ghost sm" href="#/historial" style="margin:8px 0 4px -8px"><svg class="i"><use href="#i-left"/></svg>Pacientes</a>
-      <div class="page-head" style="margin-top:4px">
+      <div class="page-head" style="margin-top:6px">
         <div style="display:flex;align-items:center;gap:16px"><div class="avatar lg" x-text="fmt.initials(det.paciente.nombreCompleto)"></div>
-          <div><h1 x-text="det.paciente.nombreCompleto"></h1><p class="num" x-text="'DNI ' + det.paciente.dni + (det.paciente.edad !== null ? ' · ' + det.paciente.edad + ' años' : '') + (det.paciente.telefono ? ' · ' + det.paciente.telefono : '')"></p></div></div>
-        <button class="btn primary" @click="nuevaConsulta()" x-show="det.citasPendientes.length"><svg class="i"><use href="#i-plus"/></svg>Registrar consulta</button>
+          <div><h1 x-text="det.paciente.nombreCompleto"></h1>
+            <p class="num" x-text="det.paciente.tipoDocumento + ' ' + det.paciente.numeroDocumento + (det.paciente.edad !== null ? ' · ' + det.paciente.edad + ' años' : '') + (det.paciente.telefono ? ' · ' + det.paciente.telefono : '')"></p></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="btn" x-show="det.paciente.activo" :href="'#/citas?nueva=1&paciente=' + det.paciente.id"><svg class="i"><use href="#i-calendar"/></svg>Agendar</a>
+          <button class="btn primary" x-show="puedeAtender" @click="nuevaConsulta()"><svg class="i"><use href="#i-plus"/></svg>Registrar consulta</button>
+        </div>
       </div>
 
-      <div class="tabs"><template x-for="t in [['consultas','Consultas'],['odontograma','Odontograma'],['notas','Notas']]" :key="t[0]"><button :class="{ on: tab === t[0] }" @click="tab = t[0]" x-text="t[1]"></button></template></div>
+      <div class="tabs"><template x-for="t in [['consultas','Consultas'],['odontograma','Odontograma'],['antecedentes','Antecedentes y notas']]" :key="t[0]"><button :class="{ on: tab === t[0] }" @click="tab = t[0]" x-text="t[1]"></button></template></div>
 
       <!-- Consultas -->
       <div x-show="tab === 'consultas'">
-        <div class="card" x-show="det.citasPendientes.length" style="margin-bottom:22px;background:var(--brand-soft);border-color:transparent">
-          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><svg class="i lg" style="color:var(--brand-ink)"><use href="#i-calendar"/></svg>
-            <div style="flex:1"><b>Citas pendientes</b><div class="muted" style="font-size:13.5px"><template x-for="c in det.citasPendientes" :key="c.id"><span x-text="fmt.short(c.fecha) + ' ' + c.hora + '  '"></span></template></div></div>
-            <button class="btn primary sm" @click="nuevaConsulta()">Registrar consulta</button></div>
-        </div>
-        <div class="empty" x-show="!det.registros.length"><svg class="art" viewBox="0 0 96 96" fill="none"><circle cx="48" cy="48" r="40" fill="var(--brand-soft)"/><rect x="30" y="24" width="36" height="48" rx="7" fill="#fff" stroke="var(--brand)" stroke-width="2.2"/><path d="M38 38h20M38 47h20M38 56h12" stroke="var(--brand)" stroke-width="2.2" stroke-linecap="round"/></svg><h3>Sin consultas todavía</h3><p x-text="det.citasPendientes.length ? 'Registra la primera desde una cita pendiente.' : 'Agenda una cita para poder registrar la consulta.'"></p></div>
+        <template x-if="det.citasAtendibles.length && puedeAtender">
+          <div class="card deep" style="margin-bottom:22px">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="tile" style="background:#fff;color:#4a2e80"><svg class="i"><use href="#i-calendar"/></svg></span>
+              <div style="flex:1"><b>Citas por atender</b><div style="font-size:13.5px;color:#e1d5e7"><template x-for="c in det.citasAtendibles" :key="c.id"><span x-text="fmt.short(c.fecha) + ' ' + c.hora + ' · Dr(a). ' + c.doctor + '   '"></span></template></div></div>
+              <button class="btn sm" style="background:#fff;color:#4a2e80;box-shadow:none" @click="nuevaConsulta()">Registrar consulta</button></div>
+          </div>
+        </template>
+        <template x-if="det.proximas.length">
+          <div class="card soft" style="margin-bottom:22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="dot-live"></span><b>Próximas citas</b>
+            <template x-for="c in det.proximas" :key="c.id"><span class="badge brand plain" x-text="fmt.short(c.fecha) + ' ' + c.hora"></span></template></div>
+        </template>
+        <div class="empty" x-show="!det.registros.length"><svg class="art float1" viewBox="0 0 120 100" fill="none"><rect x="34" y="12" width="52" height="74" rx="14" fill="var(--surface-2)"/><path d="M46 34h28M46 48h28M46 62h16" stroke="var(--brand-2)" stroke-width="5" stroke-linecap="round"/><path class="spark" d="M96 14c.4 3 1.6 4.8 6 6-4.4 1.2-5.6 3-6 6-.4-3-1.6-4.8-6-6 4.4-1.2 5.6-3 6-6Z" fill="var(--brand)"/></svg>
+          <h3>Sin consultas todavía</h3><p>Registra la primera desde una cita o como atención sin cita.</p></div>
         <div class="stagger">
           <template x-for="(r, i) in det.registros" :key="r.id">
             <div class="consult" :style="'--i:' + Math.min(i, 8)"><div class="box">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b x-text="fmt.cap(fmt.long(r.fecha))"></b><span class="muted" style="font-size:13px" x-text="'Dr. ' + r.doctor"></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b x-text="fmt.cap(fmt.long(r.fecha)) + ' · ' + r.hora"></b><span class="badge brand plain" x-text="'Dr(a). ' + r.doctor"></span></div>
               <dl><div><dt>Diagnóstico</dt><dd x-text="r.diagnostico"></dd></div><div><dt>Tratamiento</dt><dd x-text="r.tratamiento"></dd></div><div x-show="r.observaciones"><dt>Observaciones</dt><dd x-text="r.observaciones"></dd></div></dl>
-              <template x-if="r.receta"><div class="rx"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><svg class="i"><use href="#i-pill"/></svg><b>Receta</b><a class="btn sm" style="margin-left:auto" :href="'/api/recetas/' + r.receta.id + '/pdf'" target="_blank" rel="noopener"><svg class="i"><use href="#i-download"/></svg>PDF</a></div>
-                <template x-for="m in r.receta.medicamentos" :key="m.id"><div x-text="m.cantidad + '× ' + m.nombre + ' — ' + m.indicaciones"></div></template></div></template>
-              <div style="display:flex;gap:8px"><button class="btn sm" x-show="!r.receta" @click="nuevaReceta(r)"><svg class="i"><use href="#i-pill"/></svg>Emitir receta</button><button class="btn sm ghost" @click="editarConsulta(r)"><svg class="i"><use href="#i-edit"/></svg>Editar</button></div>
+              <template x-if="r.receta"><div class="rx"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><svg class="i" style="color:var(--brand)"><use href="#i-pill"/></svg><b>Receta</b><a class="btn sm" style="margin-left:auto" :href="'/api/recetas/' + r.receta.id + '/pdf'" target="_blank" rel="noopener"><svg class="i"><use href="#i-download"/></svg>PDF</a></div>
+                <template x-for="(m, j) in r.receta.medicamentos" :key="j"><div><b x-text="m.cantidad + '× ' + m.nombre"></b><span class="muted" x-text="(m.presentacion ? ' (' + m.presentacion + ')' : '') + ' — ' + m.indicaciones"></span></div></template>
+                <div class="muted" x-show="r.receta.indicaciones" x-text="r.receta.indicaciones"></div></div></template>
+              <div style="display:flex;gap:8px" x-show="r.editable"><button class="btn sm" x-show="!r.receta" @click="nuevaReceta(r)"><svg class="i"><use href="#i-pill"/></svg>Emitir receta</button><button class="btn sm ghost" @click="editarConsulta(r)"><svg class="i"><use href="#i-edit"/></svg>Editar</button></div>
             </div></div>
           </template>
         </div>
       </div>
 
       <!-- Odontograma -->
-      <div x-show="tab === 'odontograma'" x-data="odo" x-init="cargar(det.historial)">
+      <div x-show="tab === 'odontograma'" x-data="odo" x-init="cargar(det)" x-effect="registros = det.registros">
         <div class="card">
-          <div class="conds"><template x-for="c in CONDS" :key="c.key"><button class="cond" :class="{ on: cur === c.key }" :style="'--c:' + c.color" @click="cur = c.key"><i></i><span x-text="c.label"></span></button></template></div>
-          <div class="odo-wrap"><div @click="click($event)" @contextmenu.prevent="borrar($event)" x-html="svg()"></div></div>
-          <p class="hint" style="margin-top:8px">Toca una cara del diente para marcarla. Clic derecho (o “Borrar”) limpia el diente.</p>
-          <div class="field" style="margin-top:16px"><label>Descripción clínica</label><textarea class="input" x-model="desc" maxlength="1000" placeholder="Hallazgos, plan de tratamiento…" @input="dirty = true"></textarea></div>
-          <div class="actions" style="justify-content:space-between;flex-wrap:wrap">
-            <div style="display:flex;gap:8px"><button class="btn" @click="exportar()"><svg class="i"><use href="#i-download"/></svg>PNG</button><button class="btn ghost danger" @click="limpiar()">Limpiar todo</button></div>
-            <button class="btn primary" :class="{ 'is-busy': busy }" :disabled="!dirty" @click="guardar()">Guardar odontograma</button>
+          <div class="toolbar" style="margin-bottom:14px">
+            <div class="seg"><button :class="{ on: tipo === 'permanente' }" @click="tipo = 'permanente'">Permanente</button><button :class="{ on: tipo === 'temporal' }" @click="tipo = 'temporal'">Temporal</button></div>
+            <div class="grow"></div>
+            <span class="badge" :class="cambios.length ? 'warn' : 'ok'" x-text="cambios.length ? cambios.length + ' cambios sin guardar' : 'Al día'"></span>
           </div>
+          <div class="conds"><template x-for="c in CONDS" :key="c.key"><button class="cond" :class="{ on: cur === c.key }" :style="'--c:' + c.color" @click="cur = c.key"><i></i><span x-text="c.key === 'sano' ? 'Sano / borrar' : nombre(c.key)"></span><small x-show="resumen[c.key]" x-text="resumen[c.key]"></small></button></template></div>
+          <div class="odo-wrap"><div @click="click($event)" @contextmenu.prevent="borrar($event)" x-html="svg()"></div></div>
+          <p class="hint" style="margin-top:8px">Caries, obturación, sellante y fractura se marcan por superficie; las demás condiciones, en toda la pieza. Clic derecho limpia la pieza.</p>
+          <div class="grid-2" style="margin-top:16px">
+            <div class="field"><label>Vincular a la consulta</label><select class="input" x-model="registroId"><option value="">Sin vincular</option><template x-for="r in registros.filter((x) => x.editable)" :key="r.id"><option :value="r.id" x-text="fmt.short(r.fecha) + ' · ' + r.diagnostico.slice(0, 40)"></option></template></select></div>
+            <div class="field"><label>Nota de estos cambios <span class="muted">(opcional)</span></label><input class="input" x-model="notas" maxlength="500" placeholder="Ej. control radiográfico"></div>
+          </div>
+          <div class="actions" style="justify-content:space-between;flex-wrap:wrap">
+            <div style="display:flex;gap:8px"><button class="btn" @click="exportar()"><svg class="i"><use href="#i-download"/></svg>PNG</button><button class="btn ghost" x-show="cambios.length" @click="descartar()">Descartar cambios</button></div>
+            <button class="btn primary" :class="{ 'is-busy': busy }" :disabled="!cambios.length || !$store.app.sub.vigente" @click="guardar()">Guardar odontograma</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px" x-show="historial.length">
+          <div class="card-head"><h3>Historial de hallazgos</h3><span class="muted" style="font-size:13px" x-text="historial.length + ' registros'"></span></div>
+          <div class="log"><template x-for="(h, i) in historial" :key="i"><div><span class="muted num" x-text="h.cuando"></span><b class="num" x-text="h.pieza"></b><span><span x-text="h.nombre"></span><span class="muted" x-text="(h.superficie ? ' · ' + h.superficie : ' · pieza completa') + (h.notas ? ' · ' + h.notas : '')"></span></span></div></template></div>
         </div>
       </div>
 
-      <!-- Notas -->
-      <div x-show="tab === 'notas'" class="card">
-        <h3 style="margin-bottom:12px">Notas del historial</h3>
-        <pre style="white-space:pre-wrap;font:inherit;margin:0 0 18px;color:var(--ink-2)" x-text="det.historial.observaciones || 'Aún no hay notas.'"></pre>
-        <form class="form" @submit.prevent="agregarNota"><div class="field"><label>Nueva nota</label><textarea class="input" x-model="nota" maxlength="1000" required></textarea></div>
-          <div class="actions"><button class="btn primary" :class="{ 'is-busy': busy }">Agregar nota</button></div></form>
+      <!-- Antecedentes -->
+      <div x-show="tab === 'antecedentes'" class="card">
+        <div class="card-head"><div><h3>Antecedentes y notas</h3><p class="muted" style="font-size:13px;margin-top:4px">Alergias, enfermedades, medicación habitual y otras notas del paciente.</p></div></div>
+        <form class="form" @submit.prevent="guardarNotas">
+          <textarea class="input" style="min-height:200px" x-model="notas" maxlength="5000" placeholder="Alergias: …&#10;Antecedentes médicos: …&#10;Medicación habitual: …"></textarea>
+          <div class="error-text" x-show="error && !cf && !rf" x-text="error"></div>
+          <div class="actions"><button class="btn primary" :class="{ 'is-busy': busy }" :disabled="notas === det.historial.observaciones">Guardar</button></div>
+        </form>
       </div>
     </div>
   </template>
@@ -76,12 +102,18 @@
   <template x-if="cf">
     <div class="overlay" @click.self="cf = null" @keydown.escape.window="cf = null">
       <form class="modal wide" @submit.prevent="guardarConsulta">
-        <h2 x-text="cf.id ? 'Editar consulta' : 'Registrar consulta'"></h2><p class="sub">Al guardar, la cita se marca como completada.</p>
+        <div class="kicker" x-text="cf.id ? 'Editar' : 'Consulta'"></div><h2 style="margin-top:6px" x-text="cf.id ? 'Editar consulta' : 'Registrar consulta'"></h2>
+        <p class="sub" x-text="cf.id ? 'Corrige el diagnóstico o tratamiento.' : 'Al guardar, la cita queda como atendida.'"></p>
         <div class="form">
-          <div class="field" x-show="!cf.id"><label>Cita</label><select class="input" x-model="cf.citaId" required><template x-for="c in det.citasPendientes" :key="c.id"><option :value="c.id" x-text="fmt.short(c.fecha) + ' · ' + c.hora"></option></template></select></div>
-          <div class="field"><label>Diagnóstico</label><textarea class="input" x-model="cf.diagnostico" required maxlength="1000" x-init="$nextTick(() => $el.focus())"></textarea></div>
-          <div class="field"><label>Tratamiento</label><textarea class="input" x-model="cf.tratamiento" required maxlength="1000"></textarea></div>
-          <div class="field"><label>Observaciones <span class="muted">(opcional)</span></label><textarea class="input" style="min-height:64px" x-model="cf.observaciones" maxlength="1000"></textarea></div>
+          <template x-if="!cf.id"><div class="grid-2">
+            <div class="field"><label>Cita</label><select class="input" x-model="cf.citaId" required>
+              <template x-for="c in det.citasAtendibles" :key="c.id"><option :value="String(c.id)" x-text="fmt.short(c.fecha) + ' · ' + c.hora + ' · Dr(a). ' + c.doctor"></option></template>
+              <option value="sin">Atención sin cita (ahora)</option></select></div>
+            <div class="field" x-show="cf.citaId === 'sin' && !$store.app.user.esDoctor"><label>Doctor que atiende</label><select class="input" x-model="cf.doctorId"><template x-for="d in doctores" :key="d.id"><option :value="String(d.id)" x-text="'Dr(a). ' + d.usuario"></option></template></select></div>
+          </div></template>
+          <div class="field"><label>Diagnóstico</label><textarea class="input" x-model="cf.diagnostico" required maxlength="2000" x-init="$nextTick(() => $el.focus())"></textarea></div>
+          <div class="field"><label>Tratamiento</label><textarea class="input" x-model="cf.tratamiento" required maxlength="2000"></textarea></div>
+          <div class="field"><label>Observaciones <span class="muted">(opcional)</span></label><textarea class="input" style="min-height:64px" x-model="cf.observaciones" maxlength="2000"></textarea></div>
           <div class="error-text" x-show="error" x-text="error"></div>
           <div class="actions"><button type="button" class="btn" @click="cf = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }">Guardar</button></div>
         </div>
@@ -93,17 +125,22 @@
   <template x-if="rf">
     <div class="overlay" @click.self="rf = null" @keydown.escape.window="rf = null">
       <form class="modal wide" @submit.prevent="guardarReceta">
-        <h2>Emitir receta</h2><p class="sub">Se generará un PDF listo para imprimir o compartir.</p>
+        <div class="kicker">Receta</div><h2 style="margin-top:6px">Emitir receta</h2><p class="sub">Los medicamentos nuevos se suman al catálogo de tu clínica.</p>
+        <datalist id="dl-meds"><template x-for="s in sugeridos" :key="s.id"><option :value="s.nombre" x-text="s.presentacion || ''"></option></template></datalist>
         <div class="form">
           <div class="meds">
             <template x-for="(m, i) in rf.meds" :key="i">
-              <div class="med-row"><input class="input" placeholder="Medicamento" x-model="m.nombre" required maxlength="120" style="height:40px"><input class="input num" type="number" min="0.5" step="0.5" placeholder="Cant." x-model="m.cantidad" required style="height:40px"><input class="input ind" placeholder="Indicaciones (ej. 1 cada 8 h por 5 días)" x-model="m.indicaciones" required maxlength="300" style="height:40px"><button type="button" class="btn ghost icon sm" style="align-self:center" @click="rf.meds.length > 1 && rf.meds.splice(i, 1)"><svg class="i"><use href="#i-x"/></svg></button></div>
+              <div class="med-row"><input class="input" list="dl-meds" placeholder="Medicamento" x-model="m.nombre" @input.debounce.200ms="sugerir(m)" required maxlength="120" style="height:42px">
+                <input class="input pres" placeholder="Presentación" x-model="m.presentacion" maxlength="80" style="height:42px">
+                <input class="input num" type="number" min="0.25" step="0.25" placeholder="Cant." x-model="m.cantidad" required style="height:42px">
+                <input class="input ind" placeholder="Indicaciones (ej. 1 cada 8 h por 5 días)" x-model="m.indicaciones" required maxlength="300" style="height:42px">
+                <button type="button" class="btn ghost icon sm" style="align-self:center" @click="rf.meds.length > 1 && rf.meds.splice(i, 1)"><svg class="i"><use href="#i-x"/></svg></button></div>
             </template>
           </div>
-          <button type="button" class="btn sm" style="justify-self:start" @click="rf.meds.push({ nombre: '', cantidad: 1, indicaciones: '' })"><svg class="i"><use href="#i-plus"/></svg>Agregar medicamento</button>
+          <button type="button" class="btn sm" style="justify-self:start" @click="rf.meds.push({ nombre: '', presentacion: '', cantidad: 1, indicaciones: '' })"><svg class="i"><use href="#i-plus"/></svg>Agregar medicamento</button>
           <div class="field"><label>Indicaciones generales <span class="muted">(opcional)</span></label><textarea class="input" style="min-height:64px" x-model="rf.indicaciones" maxlength="1000"></textarea></div>
           <div class="error-text" x-show="error" x-text="error"></div>
-          <div class="actions"><button type="button" class="btn" @click="rf = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }">Generar receta</button></div>
+          <div class="actions"><button type="button" class="btn" @click="rf = null">Cancelar</button><button class="btn primary" :class="{ 'is-busy': busy }">Emitir receta</button></div>
         </div>
       </form>
     </div>

@@ -1,0 +1,23 @@
+<div class="auth" x-data="olvideView">
+  <div class="auth-form">
+    <form class="inner in1" @submit.prevent="submit">
+      <a class="marca" href="#/" style="padding:0"><span class="logo"></span><span class="word">DENTAL HOME</span></a>
+      <div><h1>Recupera tu acceso</h1><p class="muted" style="margin-top:8px">Te enviaremos un enlace de un solo uso, válido por 1 hora.</p></div>
+      <template x-if="!enviado"><div class="form">
+        <div class="field"><label for="c">Código de la clínica</label><input id="c" class="input" x-model="f.clinica" placeholder="mi-consultorio" autocapitalize="off" required></div>
+        <div class="field"><label for="m">Correo de tu usuario</label><input id="m" type="email" class="input" x-model="f.correo" autocomplete="email" required></div>
+        <div class="error-text" x-show="error" x-text="error"></div>
+        <button class="btn primary lg" :class="{ 'is-busy': busy }" style="width:100%">Enviar enlace</button>
+      </div></template>
+      <div class="ok-text" x-show="enviado" x-text="enviado"></div>
+      <p class="muted" style="text-align:center"><a class="link" href="#/login">Volver a iniciar sesión</a></p>
+    </form>
+  </div>
+  <div class="auth-art">
+    <svg class="spark" style="width:22px;top:18%;left:16%" viewBox="0 0 24 24"><path d="M12 2c.6 4.6 2.4 7.4 10 10-7.6 2.6-9.4 5.4-10 10-.6-4.6-2.4-7.4-10-10 7.6-2.6 9.4-5.4 10-10Z"/></svg>
+    <svg class="spark" style="width:14px;bottom:22%;right:18%;animation-delay:-1.2s" viewBox="0 0 24 24"><path d="M12 2c.6 4.6 2.4 7.4 10 10-7.6 2.6-9.4 5.4-10 10-.6-4.6-2.4-7.4-10-10 7.6-2.6 9.4-5.4 10-10Z"/></svg>
+    <div><div class="emblem float1"></div>
+      <blockquote>Tu información está protegida: cada consultorio vive aislado y cada acción queda registrada.<small>Seguridad de Dental Home</small></blockquote></div>
+  </div>
+
+</div>

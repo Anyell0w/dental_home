@@ -14,8 +14,8 @@
     if (!r.ok) {
       const err = new ApiError((data && data.error) || 'Ocurrió un error inesperado.', r.status, data && data.codigo);
       const app = Alpine.store('app');
-      if (r.status === 401 && app.user) app.expire();
-      if (r.status === 402 && err.code === 'suscripcion') location.hash = '#/suscripcion';
+      if (r.status === 401 && app.user && !url.startsWith('/api/plataforma')) app.expire();
+      if (r.status === 402 && err.code === 'suscripcion' && app.is('administrador')) location.hash = '#/suscripcion';
       throw err;
     }
     return data;
@@ -28,14 +28,19 @@
   /* ---------- formato ---------- */
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const ROLES = { administrador: 'Administrador', doctor: 'Doctor', secretaria: 'Secretaria' };
+  const ESTADOS = { pendiente: 'Pendiente', completada: 'Completada', cancelada: 'Cancelada' };
+  const TURNOS = { manana: 'Mañana', tarde: 'Tarde', tiempo_completo: 'Tiempo completo' };
   const parse = (iso) => { const [y, m, d] = iso.slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d); };
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const min = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
   window.fmt = {
-    MESES, DIAS, parse, iso, today: () => iso(new Date()),
+    MESES, DIAS, ROLES, ESTADOS, TURNOS, parse, iso, min, today: () => iso(new Date()),
     initials: (s) => (s || '?').split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase(),
     long: (i) => { const d = parse(i); return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`; },
-    short: (i) => { const d = parse(i); return `${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`; },
+    short: (i) => { if (!i) return '—'; const d = parse(i); return `${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`; },
     add: (i, n) => { const d = parse(i); d.setDate(d.getDate() + n); return iso(d); },
+    hhmm: (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`,
     ago: (s) => {
       if (!s) return '';
       const t = new Date(s.length <= 10 ? s + 'T00:00:00' : s), m = Math.round((Date.now() - t) / 60000);
@@ -45,12 +50,17 @@
     },
     saludo: () => { const h = new Date().getHours(); return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'; },
     cap: (s) => (s ? s[0].toUpperCase() + s.slice(1) : ''),
+    rol: (r) => ROLES[r] || r,
+    estado: (e) => ESTADOS[e] || e,
+    turno: (t) => TURNOS[t] || '—',
+    soles: (n) => 'S/ ' + Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 }),
+    estadoSub: (s) => ({ prueba: `Prueba · ${s.dias_restantes} d`, activa: 'Activa', vencida: 'Vencida', cancelada: 'Inactiva', sin_plan: 'Sin plan' })[s.estado] || s.estado,
   };
 
   document.addEventListener('alpine:init', () => {
     /* ---------- UI global ---------- */
     Alpine.store('ui', {
-      toasts: [], cmdk: false, dialog: null, _res: null,
+      toasts: [], cmdk: false, dialog: null, clave: null, _res: null,
       toast(msg, type = 'ok') {
         const id = Math.random();
         this.toasts.push({ id, msg, type });
@@ -81,16 +91,17 @@
         this.theme = this.theme === 'dark' ? 'light' : 'dark';
         document.documentElement.dataset.theme = this.theme;
         try { localStorage.setItem('dh-theme', this.theme); } catch (e) { /* modo privado */ }
-        window.dispatchEvent(new CustomEvent('themechange'));
       },
     });
 
     /* ---------- router por hash ---------- */
-    const CLIN = ['Doctor', 'Administrador'], ADM = ['Administrador'];
+    const CLIN = ['doctor', 'administrador'], ADM = ['administrador'];
     const ROUTES = {
       '': { v: 'landing', pub: 1 }, login: { v: 'login', pub: 1 }, registro: { v: 'registro', pub: 1 },
+      olvide: { v: 'olvide', pub: 1 }, restablecer: { v: 'restablecer', pub: 1 }, pago: { v: 'pago', pub: 1, libre: 1 },
+      plataforma: { v: 'plataforma', pub: 1, libre: 1 },
       inicio: { v: 'inicio' }, pacientes: { v: 'pacientes' }, citas: { v: 'citas' },
-      historial: { v: 'historial', roles: CLIN }, reportes: { v: 'reportes', roles: ADM },
+      historial: { v: 'historial', roles: CLIN }, reportes: { v: 'reportes', roles: ADM }, auditoria: { v: 'auditoria', roles: ADM },
       copias: { v: 'copias', roles: ADM }, equipo: { v: 'equipo', roles: ADM }, suscripcion: { v: 'suscripcion', roles: ADM },
     };
     const cache = {};
@@ -105,12 +116,11 @@
         let target = name;
         if (!route) { target = app.user ? 'inicio' : ''; route = ROUTES[target]; }
         if (!route.pub && !app.user) { target = 'login'; route = ROUTES.login; }
-        else if (app.user && (target === 'login' || target === 'registro')) { target = 'inicio'; route = ROUTES.inicio; }
+        else if (app.user && route.pub && !route.libre) { target = 'inicio'; route = ROUTES.inicio; }
         else if (route.roles && !route.roles.includes(app.user.rol)) { target = 'inicio'; route = ROUTES.inicio; }
         if (target !== name) { history.replaceState(null, '', '#/' + target); }
         this.query = Object.fromEntries(new URLSearchParams(qs || ''));
         this.params = target === name ? params : [];
-        const changed = this.name !== target || this.pub !== !!route.pub;
         this.name = target; this.pub = !!route.pub;
         if (!cache[route.v]) {
           const r = await fetch(`/static/views/${route.v}.html`);
@@ -120,7 +130,7 @@
         await Alpine.nextTick();
         this.html = cache[route.v];
         document.title = (target ? fmt.cap(target) + ' · ' : '') + 'Dental Home';
-        if (changed || true) window.scrollTo({ top: 0 });
+        window.scrollTo({ top: 0 });
       },
     });
 
@@ -141,14 +151,6 @@
         };
         raf = requestAnimationFrame(tick);
       }));
-    });
-    // x-reveal: aparece al entrar en pantalla
-    Alpine.directive('reveal', (el) => {
-      el.classList.add('reveal');
-      const io = new IntersectionObserver((es) => es.forEach((e) => {
-        if (e.isIntersecting) { el.classList.add('in'); io.disconnect(); }
-      }), { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-      io.observe(el);
     });
   });
 

@@ -7,4 +7,4 @@ COPY . .
 ENV DENTAL_DATA_DIR=/data MPLBACKEND=Agg PORT=8000
 VOLUME /data
 EXPOSE 8000
-CMD ["sh", "-c", "gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:${PORT} web.app:app"]
+CMD ["sh", "-c", "python -m web.db init && gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:${PORT} web.app:app"]

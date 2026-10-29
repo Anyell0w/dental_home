@@ -12,33 +12,61 @@ copias de seguridad y administración de usuarios por roles.
 
 ## Versión web (SaaS por suscripción)
 
-La lógica (modelos, DAO, controladores) es la misma del escritorio; `web/` la expone como
-API Flask y agrega una interfaz moderna en el navegador.
+API Flask sobre **PostgreSQL 16** con el esquema de `db/schema.sql` (modelo ER en 3FN, una base compartida,
+aislamiento por clínica con `clinica_id` + Row Level Security) y una SPA ligera (Alpine.js) en `web/static`.
+La aplicación de escritorio (Tkinter + SQLite) sigue funcionando de forma independiente.
 
 ```bash
 pip install -r requirements.txt
-python -m web.app                    # http://localhost:5000
-# producción: gunicorn -w 2 -k gthread --threads 4 web.app:app   (o `docker build .`)
+# 1) crear la base, aplicar el esquema y el rol de login de la API (como superusuario)
+DATABASE_ADMIN_URL=postgresql://postgres:postgres@localhost:5432/postgres python -m web.db init
+# 2) (opcional) administrador de la consola de plataforma
+python -m web.db admin-plataforma admin@dentalhome.pe
+# 3) servidor
+python -m web.app                    # http://localhost:5000   ·  consola: /#/plataforma
+# todo junto con Docker:  docker compose up
 ```
 
-- **Multi-clínica:** cada consultorio tiene su propio SQLite en `data/clinicas/<código>/` (aislamiento total);
-  `data/plataforma.db` guarda clínicas, plan y estado de suscripción. Variables: `DENTAL_DATA_DIR`,
-  `DENTAL_SECRET_KEY`, `DENTAL_HTTPS=1` (cookie segura), `PORT`.
-- **Planes** (`web/platform.py`): Esencial / Profesional / Clínica, con límites de usuarios y pacientes,
-  Excel solo desde Profesional, 14 días de prueba. Vencida la prueba o cancelado el plan, la clínica queda
-  en solo lectura (HTTP 402 al escribir).
-- **Roles:** Administrador (todo), Doctor (agenda propia, historial, odontograma, recetas), Secretaria (pacientes y citas).
-  El Administrador también accede al historial clínico (en un consultorio pequeño suele ser el propio odontólogo).
-- **Frontend sin build:** Alpine.js + three.js vendorizados en `web/static/vendor` (landing con diente 3D).
-  Guía de diseño en `.claude/skills/dental-ui/SKILL.md`.
+| Variable | Uso |
+|---|---|
+| `DATABASE_URL` | Conexión de la API (por defecto `postgresql://dental_api:dental_api@localhost:5432/dental_home`) |
+| `DATABASE_ADMIN_URL`, `DENTAL_API_PASSWORD` | Solo para `python -m web.db init` |
+| `DENTAL_TZ` | Zona horaria de la clínica (por defecto `America/Lima`) |
+| `DENTAL_SECRET_KEY`, `DENTAL_HTTPS=1` | Firma de cookies de la consola y cookie segura |
+| `DENTAL_PASARELA`, `DENTAL_WEBHOOK_SECRET` | Pasarela de pago (`simulada` en desarrollo) y secreto HMAC del webhook |
+| `DENTAL_SMTP_*`, `DENTAL_BASE_URL` | Correo saliente (sin SMTP los mensajes van a `data/outbox.log`) |
+| `DENTAL_DATA_DIR` | Copias de seguridad y bandeja de salida |
+
+**Cómo usa la API el esquema**
+- **Roles de PostgreSQL:** la API entra con `dental_api` (sin privilegios propios). Cada petición abre una transacción con
+  `SET LOCAL ROLE dental_app` + `app.clinica_id` (RLS); el registro de clínicas, los pagos, el webhook y la consola usan
+  `dental_plataforma`. Ninguna consulta de la app filtra por clínica a mano: lo garantiza la base.
+- **Agenda:** la restricción de exclusión de `citas` impide cruces por doctor; la API traduce el error a un mensaje.
+- **Odontograma:** cada cambio es un hallazgo fechado en `odontograma_hallazgos`; el estado vigente sale de
+  `v_odontograma_actual` (dentición permanente y temporal).
+- **Consultas:** un `registro_clinico` por cita. La "atención sin cita" crea la cita en el momento.
+- **Recetas:** catálogo propio de `medicamentos` por clínica; el PDF se genera al descargarlo.
+- **Seguridad:** argon2id, bloqueo de 15 min tras 5 intentos, sesiones en `sesiones` (solo hash del token, expiración por inactividad),
+  recuperación de contraseña con `tokens_recuperacion` de un solo uso y `auditoria` de solo inserción (vista *Auditoría*).
+- **Suscripción y pagos:** `v_suscripcion_actual` decide si la clínica puede escribir (HTTP 402 si venció). Pagar crea un `pago`
+  pendiente; el plan solo cambia cuando llega el webhook firmado (`POST /api/webhooks/<pasarela>`, idempotente con `eventos_webhook`).
+  En desarrollo, la pasarela de prueba (`/#/pago/<ref>`) envía ese mismo webhook.
+- **Tareas programadas** (`python -m web.tareas recordatorios|avisos|copias|todo`): recordatorios de cita 24 h antes por
+  correo/WhatsApp (`notificaciones`), avisos de vencimiento y copias automáticas (`copias_seguridad`). Ejemplo de cron:
+  `*/5 * * * * python -m web.tareas recordatorios` y `0 3 * * * python -m web.tareas avisos && python -m web.tareas copias`.
+
+**Pruebas:** `python -m pytest tests/` (requiere la base inicializada) cubre aislamiento RLS, cruces de citas, bloqueo,
+recuperación de contraseña, webhook idempotente, reportes, copias y tareas.
+
+**Diseño:** paleta, tipografías (Manrope y Montserrat, incluidas en `web/static/vendor/fonts`), logo y animaciones del landing;
+guía en `.claude/skills/dental-ui/SKILL.md`.
 
 **Brief corporativo** (empresa, objetivos, competencia, presupuesto y plazos): [`docs/brief-corporativo-dental-home.pdf`](docs/brief-corporativo-dental-home.pdf). Se regenera con `python docs/brief_corporativo.py` (los supuestos financieros están en ese archivo).
 
 ### Pendiente antes de cobrar de verdad
-1. **Pasarela de pago:** `POST /api/suscripcion/plan` activa el plan *sin cobrar* (modo demo). Integrar Stripe/Culqi/MercadoPago
-   y activar el plan desde su webhook.
-2. **Contraseñas:** el modelo original usa SHA-256 sin sal (`Usuario.hashear_contrasena`); migrar a bcrypt/argon2 antes de producción.
-3. HTTPS, correo de recuperación de contraseña y respaldos externos de `data/`.
+1. **Pasarela real:** implementar `crear_cobro()` en `web/pasarela.py` (Culqi, Niubiz, Mercado Pago…) y apuntar su webhook a la API.
+2. **Proveedor de WhatsApp** en `web/notificador.py` y SMTP real para los correos.
+3. HTTPS, copias externas de la base (`pg_dump`) y monitoreo.
 
 ## Arquitectura
 
