@@ -27,6 +27,14 @@ python -m web.app                    # http://localhost:5000   ·  consola: /#/p
 # todo junto con Docker:  docker compose up
 ```
 
+En **Windows (PowerShell)** las variables se definen así (la contraseña de `postgres` solo va en `DATABASE_ADMIN_URL`):
+
+```powershell
+$env:DATABASE_ADMIN_URL = "postgresql://postgres:TU_CLAVE@localhost:5432/postgres"
+python -m web.db init        # crea el rol dental_api; la API usa DATABASE_URL (por defecto dental_api/dental_api)
+python -m web.app
+```
+
 | Variable | Uso |
 |---|---|
 | `DATABASE_URL` | Conexión de la API (por defecto `postgresql://dental_api:dental_api@localhost:5432/dental_home`) |

@@ -79,10 +79,23 @@ def como_plataforma(con, cid: int):
 # ----------------------------------------------------------------------------
 # Inicialización
 # ----------------------------------------------------------------------------
+def _leer_url(nombre: str, valor: str) -> dict:
+    try:
+        return conninfo.conninfo_to_dict(valor)
+    except psycopg.ProgrammingError:
+        sys.exit(f"{nombre} no es una URL de conexión válida: {valor!r}\n"
+                 f"Formato esperado: postgresql://usuario:contraseña@localhost:5432/base")
+
+
 def init(admin_dsn: str, api_password: str) -> None:
-    info = conninfo.conninfo_to_dict(DSN)
+    info = _leer_url("DATABASE_URL", DSN)
+    _leer_url("DATABASE_ADMIN_URL", admin_dsn)
     base, usuario_api = info.get("dbname", "dental_home"), info.get("user", "dental_api")
     with psycopg.connect(admin_dsn, autocommit=True) as con:
+        if con.execute("SELECT 1 FROM pg_roles WHERE rolname = %s AND (rolsuper OR rolbypassrls)", (usuario_api,)).fetchone():
+            sys.exit(f"DATABASE_URL usa el rol {usuario_api!r}, que es superusuario o salta RLS: la API perdería el "
+                     "aislamiento entre clínicas. Usa un rol propio (por defecto dental_api) y deja el superusuario "
+                     "solo en DATABASE_ADMIN_URL.")
         if not con.execute("SELECT 1 FROM pg_database WHERE datname = %s", (base,)).fetchone():
             con.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(base)))
             print(f"Base de datos {base} creada.")
@@ -116,8 +129,11 @@ def crear_admin_plataforma(correo: str, clave: str) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "init":
-        init(os.environ.get("DATABASE_ADMIN_URL", "postgresql:///postgres"),
-             os.environ.get("DENTAL_API_PASSWORD", "dental_api"))
+        try:
+            init(os.environ.get("DATABASE_ADMIN_URL", "postgresql:///postgres"),
+                 os.environ.get("DENTAL_API_PASSWORD", "dental_api"))
+        except psycopg.OperationalError as e:
+            sys.exit(f"No se pudo conectar a PostgreSQL con DATABASE_ADMIN_URL: {e}")
     elif len(sys.argv) >= 3 and sys.argv[1] == "admin-plataforma":
         import getpass
         clave = os.environ.get("DENTAL_PLATAFORMA_PASSWORD") or getpass.getpass("Contraseña: ")
