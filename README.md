@@ -6,7 +6,6 @@ copias de seguridad y administración de usuarios por roles.
 
 # INTEGRANTES
 - Angello Marcelo Zamora Valencia
-- Ronaldo Carlos Mamani Mena
 - Lizbeth Estefany Cáceres Tacora
 - Tania Karin Butrón Maquera
 
